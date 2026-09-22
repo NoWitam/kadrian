@@ -1,0 +1,364 @@
+[
+  {
+    "name": "unknown-field-root",
+    "description": "A field the schema does not define is an error, not a silent pass-through.",
+    "patch": [{ "op": "add", "path": "/title", "value": "Untitled" }],
+    "expectedErrors": [{ "code": "unknown-field", "path": "/title" }]
+  },
+  {
+    "name": "unknown-field-node",
+    "description": "Nodes are closed objects too.",
+    "patch": [{ "op": "add", "path": "/scenes/0/nodes/1/children/0/blur", "value": 4 }],
+    "expectedErrors": [{ "code": "unknown-field", "path": "/scenes/0/nodes/1/children/0/blur" }]
+  },
+  {
+    "name": "unknown-field-value-object",
+    "description": "Value objects such as a position are closed objects too.",
+    "patch": [{ "op": "add", "path": "/scenes/0/nodes/2/position/z", "value": 0 }],
+    "expectedErrors": [{ "code": "unknown-field", "path": "/scenes/0/nodes/2/position/z" }]
+  },
+  {
+    "name": "custom-html-capabilities",
+    "description": "Schema 0.1 defines no Custom HTML capability, so a document cannot grant one.",
+    "patch": [{ "op": "add", "path": "/scenes/0/nodes/3/capabilities", "value": ["network"] }],
+    "expectedErrors": [{ "code": "unknown-field", "path": "/scenes/0/nodes/3/capabilities" }]
+  },
+  {
+    "name": "schema-version-unsupported",
+    "description": "A version this build does not support yields one error instead of a flood of structural ones.",
+    "patch": [{ "op": "replace", "path": "/schemaVersion", "value": "0.2" }],
+    "expectedErrors": [{ "code": "unsupported-schema-version", "path": "/schemaVersion" }]
+  },
+  {
+    "name": "schema-version-not-a-string",
+    "description": "Any value other than a supported version string is an unsupported version.",
+    "patch": [{ "op": "replace", "path": "/schemaVersion", "value": 1 }],
+    "expectedErrors": [{ "code": "unsupported-schema-version", "path": "/schemaVersion" }]
+  },
+  {
+    "name": "schema-version-missing",
+    "description": "The schema version is part of the document.",
+    "patch": [{ "op": "remove", "path": "/schemaVersion" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/schemaVersion" }]
+  },
+  {
+    "name": "time-fractional",
+    "description": "D04: persistent time values are integer microseconds.",
+    "patch": [{ "op": "replace", "path": "/durationUs", "value": 10000000.5 }],
+    "expectedErrors": [{ "code": "invalid-type", "path": "/durationUs" }]
+  },
+  {
+    "name": "time-negative",
+    "description": "Time values start at zero.",
+    "patch": [{ "op": "replace", "path": "/clips/0/startUs", "value": -1 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/clips/0/startUs" }]
+  },
+  {
+    "name": "time-not-a-number",
+    "description": "A numeric string is not a time value.",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/scenes/0/nodes/2/animations/0/keyframes/1/timeUs",
+        "value": "7500000"
+      }
+    ],
+    "expectedErrors": [
+      { "code": "invalid-type", "path": "/scenes/0/nodes/2/animations/0/keyframes/1/timeUs" }
+    ]
+  },
+  {
+    "name": "time-above-safe-integer",
+    "description": "2^53 is the first integer that is no longer exact in every JSON implementation.",
+    "patch": [{ "op": "replace", "path": "/clips/0/durationUs", "value": 9007199254740992 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/clips/0/durationUs" }]
+  },
+  {
+    "name": "duration-zero",
+    "description": "A duration is at least one microsecond.",
+    "patch": [{ "op": "replace", "path": "/durationUs", "value": 0 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/durationUs" }]
+  },
+  {
+    "name": "fps-fractional",
+    "description": "D13: the frame rate is an integer.",
+    "patch": [{ "op": "replace", "path": "/fps", "value": 29.97 }],
+    "expectedErrors": [{ "code": "invalid-type", "path": "/fps" }]
+  },
+  {
+    "name": "fps-out-of-range",
+    "description": "D13: schema 0.1 accepts 1 to 120 frames per second.",
+    "patch": [{ "op": "replace", "path": "/fps", "value": 0 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/fps" }]
+  },
+  {
+    "name": "canvas-too-large",
+    "description": "D15: the canvas stops at 1920 because D07 stops at 1080p.",
+    "patch": [{ "op": "replace", "path": "/width", "value": 3840 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/width" }]
+  },
+  {
+    "name": "pixel-fractional",
+    "description": "D15: persisted coordinates are integer composition pixels.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/2/position/x", "value": 90.5 }],
+    "expectedErrors": [{ "code": "invalid-type", "path": "/scenes/0/nodes/2/position/x" }]
+  },
+  {
+    "name": "opacity-out-of-range",
+    "description": "D15: opacity lies between 0 and 1.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/2/opacity", "value": 1.5 }],
+    "expectedErrors": [{ "code": "out-of-range", "path": "/scenes/0/nodes/2/opacity" }]
+  },
+  {
+    "name": "color-uppercase",
+    "description": "D15: colours are lowercase #rrggbb strings.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/0/color", "value": "#0B1020" }],
+    "expectedErrors": [{ "code": "invalid-value", "path": "/scenes/0/nodes/0/color" }]
+  },
+  {
+    "name": "content-hash-unsupported-algorithm",
+    "description": "D14: schema 0.1 accepts sha256 content hashes only.",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/assets/0/contentHash",
+        "value": "sha1:da39a3ee5e6b4b0d3255bfef95601890afd80709"
+      }
+    ],
+    "expectedErrors": [{ "code": "invalid-value", "path": "/assets/0/contentHash" }]
+  },
+  {
+    "name": "asset-reference-unresolved-image",
+    "description": "A missing required asset is an error, not a silent fallback.",
+    "patch": [
+      { "op": "replace", "path": "/scenes/0/nodes/1/children/0/assetId", "value": "asset-missing" }
+    ],
+    "expectedErrors": [
+      { "code": "unresolved-asset-reference", "path": "/scenes/0/nodes/1/children/0/assetId" }
+    ]
+  },
+  {
+    "name": "asset-reference-unresolved-font",
+    "description": "A font is an asset like any other.",
+    "patch": [
+      { "op": "replace", "path": "/scenes/0/nodes/2/fontAssetId", "value": "asset-missing" }
+    ],
+    "expectedErrors": [
+      { "code": "unresolved-asset-reference", "path": "/scenes/0/nodes/2/fontAssetId" }
+    ]
+  },
+  {
+    "name": "asset-reference-unresolved-clip",
+    "description": "Clips refer to assets as well.",
+    "patch": [{ "op": "replace", "path": "/clips/0/assetId", "value": "asset-missing" }],
+    "expectedErrors": [{ "code": "unresolved-asset-reference", "path": "/clips/0/assetId" }]
+  },
+  {
+    "name": "asset-removed",
+    "description": "Removing an asset reports every reference to it, in document order.",
+    "patch": [{ "op": "remove", "path": "/assets/2" }],
+    "expectedErrors": [
+      { "code": "unresolved-asset-reference", "path": "/scenes/0/nodes/1/children/1/fontAssetId" },
+      { "code": "unresolved-asset-reference", "path": "/scenes/0/nodes/2/fontAssetId" }
+    ]
+  },
+  {
+    "name": "asset-reference-wrong-type",
+    "description": "An image node cannot display a font.",
+    "patch": [
+      { "op": "replace", "path": "/scenes/0/nodes/1/children/0/assetId", "value": "asset-font" }
+    ],
+    "expectedErrors": [
+      { "code": "asset-type-mismatch", "path": "/scenes/0/nodes/1/children/0/assetId" }
+    ]
+  },
+  {
+    "name": "duplicate-id-same-kind",
+    "description": "The later occurrence of an ID is reported.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/2/id", "value": "node-caption" }],
+    "expectedErrors": [{ "code": "duplicate-id", "path": "/scenes/0/nodes/2/id" }]
+  },
+  {
+    "name": "duplicate-id-across-kinds",
+    "description": "D16: IDs share one namespace, whatever the kind of entity.",
+    "patch": [{ "op": "replace", "path": "/clips/0/id", "value": "asset-audio" }],
+    "expectedErrors": [{ "code": "duplicate-id", "path": "/clips/0/id" }]
+  },
+  {
+    "name": "duplicate-id-animation",
+    "description": "Animation IDs take part in the same namespace.",
+    "patch": [
+      { "op": "replace", "path": "/scenes/0/nodes/2/animations/0/id", "value": "scene-main" }
+    ],
+    "expectedErrors": [{ "code": "duplicate-id", "path": "/scenes/0/nodes/2/animations/0/id" }]
+  },
+  {
+    "name": "missing-id-scene",
+    "description": "Scenes require a stable ID.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/scenes/0/id" }]
+  },
+  {
+    "name": "missing-id-node",
+    "description": "Nodes require a stable ID.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/nodes/0/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/scenes/0/nodes/0/id" }]
+  },
+  {
+    "name": "missing-id-child-node",
+    "description": "Nodes inside a group require a stable ID.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/nodes/1/children/1/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/scenes/0/nodes/1/children/1/id" }]
+  },
+  {
+    "name": "missing-id-clip",
+    "description": "Clips require a stable ID.",
+    "patch": [{ "op": "remove", "path": "/clips/0/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/clips/0/id" }]
+  },
+  {
+    "name": "missing-id-animation",
+    "description": "Animations require a stable ID.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/nodes/1/animations/0/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/scenes/0/nodes/1/animations/0/id" }]
+  },
+  {
+    "name": "missing-id-asset",
+    "description": "Assets require a stable ID. Structural errors stop validation before references are checked.",
+    "patch": [{ "op": "remove", "path": "/assets/0/id" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/assets/0/id" }]
+  },
+  {
+    "name": "id-invalid-characters",
+    "description": "D16: IDs match ^[A-Za-z0-9_-]+$.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/0/id", "value": "node background" }],
+    "expectedErrors": [{ "code": "invalid-value", "path": "/scenes/0/nodes/0/id" }]
+  },
+  {
+    "name": "node-type-unknown",
+    "description": "An unsupported node type is one error at the discriminator, not one error per known type.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/0/type", "value": "video" }],
+    "expectedErrors": [{ "code": "invalid-value", "path": "/scenes/0/nodes/0/type" }]
+  },
+  {
+    "name": "node-type-missing",
+    "description": "A node without a type cannot be validated further.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/nodes/0/type" }],
+    "expectedErrors": [{ "code": "missing-field", "path": "/scenes/0/nodes/0/type" }]
+  },
+  {
+    "name": "group-nested",
+    "description": "D16: groups do not nest in schema 0.1.",
+    "patch": [{ "op": "replace", "path": "/scenes/0/nodes/1/children/1/type", "value": "group" }],
+    "expectedErrors": [{ "code": "invalid-value", "path": "/scenes/0/nodes/1/children/1/type" }]
+  },
+  {
+    "name": "scene-second",
+    "description": "D16: schema 0.1 has exactly one scene.",
+    "patch": [{ "op": "add", "path": "/scenes/-", "value": { "id": "scene-second", "nodes": [] } }],
+    "expectedErrors": [{ "code": "invalid-length", "path": "/scenes" }]
+  },
+  {
+    "name": "clip-second",
+    "description": "D16: schema 0.1 has at most one audio clip, because mixing is undefined.",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/clips/-",
+        "value": {
+          "id": "clip-audio-second",
+          "type": "audio",
+          "assetId": "asset-audio",
+          "startUs": 5000000,
+          "durationUs": 1000000
+        }
+      }
+    ],
+    "expectedErrors": [{ "code": "invalid-length", "path": "/clips" }]
+  },
+  {
+    "name": "interpolation-unsupported",
+    "description": "Q11: linear interpolation only.",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/scenes/0/nodes/2/animations/0/interpolation",
+        "value": "ease-in-out"
+      }
+    ],
+    "expectedErrors": [
+      { "code": "invalid-value", "path": "/scenes/0/nodes/2/animations/0/interpolation" }
+    ]
+  },
+  {
+    "name": "animation-property-unknown",
+    "description": "Only opacity, position, and scale can be animated.",
+    "patch": [
+      { "op": "replace", "path": "/scenes/0/nodes/2/animations/0/property", "value": "rotation" }
+    ],
+    "expectedErrors": [
+      { "code": "invalid-value", "path": "/scenes/0/nodes/2/animations/0/property" }
+    ]
+  },
+  {
+    "name": "animation-value-wrong-shape",
+    "description": "The keyframe value type follows the animated property.",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/scenes/0/nodes/2/animations/0/keyframes/0/value",
+        "value": { "x": 1, "y": 1 }
+      }
+    ],
+    "expectedErrors": [
+      { "code": "invalid-type", "path": "/scenes/0/nodes/2/animations/0/keyframes/0/value" }
+    ]
+  },
+  {
+    "name": "keyframes-single",
+    "description": "D16: an animation has at least two keyframes; a constant belongs on the node.",
+    "patch": [{ "op": "remove", "path": "/scenes/0/nodes/2/animations/0/keyframes/1" }],
+    "expectedErrors": [
+      { "code": "invalid-length", "path": "/scenes/0/nodes/2/animations/0/keyframes" }
+    ]
+  },
+  {
+    "name": "keyframes-not-ascending",
+    "description": "D16: keyframe times ascend strictly, so array order carries no extra meaning.",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/scenes/0/nodes/2/animations/0/keyframes/1/timeUs",
+        "value": 0
+      }
+    ],
+    "expectedErrors": [
+      {
+        "code": "keyframes-not-ascending",
+        "path": "/scenes/0/nodes/2/animations/0/keyframes/1/timeUs"
+      }
+    ]
+  },
+  {
+    "name": "animation-duplicate-target",
+    "description": "D16: a node has at most one animation per property.",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/scenes/0/nodes/2/animations/-",
+        "value": {
+          "id": "anim-title-opacity-second",
+          "property": "opacity",
+          "interpolation": "linear",
+          "keyframes": [
+            { "timeUs": 0, "value": 1 },
+            { "timeUs": 1000000, "value": 0 }
+          ]
+        }
+      }
+    ],
+    "expectedErrors": [
+      { "code": "duplicate-animation-target", "path": "/scenes/0/nodes/2/animations/1/property" }
+    ]
+  }
+]

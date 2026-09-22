@@ -1,0 +1,12 @@
+packages:
+  - packages/*
+
+# Supply-chain cooling-off: never resolve a dependency version that was
+# published less than 24 hours ago (value in minutes).
+minimumReleaseAge: 1440
+
+# Tooling versions are pinned exactly; upgrades are explicit, reviewable diffs.
+saveExact: true
+
+# Fail installation on an unsupported Node.js version (see "engines").
+engineStrict: true

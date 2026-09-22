@@ -1,0 +1,17 @@
+{
+  "name": "@kadrion/producer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Chromium/FFmpeg render orchestration.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ]
+}

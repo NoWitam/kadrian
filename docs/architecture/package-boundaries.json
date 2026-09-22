@@ -1,0 +1,41 @@
+{
+  "$comment": "Normative package boundary map, enforced by tests/repo/package-boundaries.test.ts. Read docs/adr/D12-package-dependency-map.md before editing: removing a prohibition requires an ADR.",
+  "packages": {
+    "schema": { "allowedDependencies": [] },
+    "runtime": { "allowedDependencies": ["schema"] },
+    "editor-sdk": { "allowedDependencies": ["schema"] },
+    "ai-sdk": { "allowedDependencies": ["editor-sdk", "schema"] },
+    "player": { "allowedDependencies": ["runtime", "schema"] },
+    "producer": { "allowedDependencies": ["runtime", "schema"] },
+    "cli": { "allowedDependencies": ["producer", "schema"] },
+    "test-fixtures": { "allowedDependencies": [], "devOnly": true }
+  },
+  "prohibited": [
+    {
+      "from": ["schema"],
+      "to": ["*"],
+      "reason": "The schema package is the persistent data contract and the root of the dependency graph."
+    },
+    {
+      "from": ["test-fixtures"],
+      "to": ["*"],
+      "reason": "Fixtures are pure data. Every package may devDepend on them, so any outgoing edge would create a cycle."
+    },
+    {
+      "from": ["editor-sdk", "ai-sdk"],
+      "to": ["runtime", "player", "producer"],
+      "reason": "Commands are document transforms. UI and AI share one command bus that must work without a renderer."
+    },
+    {
+      "from": ["producer"],
+      "to": ["player"],
+      "reason": "Player and Producer share the runtime build. Shared code moves down into runtime, never sideways."
+    },
+    {
+      "from": ["player"],
+      "to": ["producer"],
+      "reason": "Player and Producer share the runtime build. Shared code moves down into runtime, never sideways."
+    }
+  ],
+  "externalRuntimeDependencies": {}
+}

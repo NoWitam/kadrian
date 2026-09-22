@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "0.1",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "durationUs": 10000000,
+  "assets": [
+    {
+      "id": "asset-image",
+      "type": "image",
+      "contentHash": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+      "id": "asset-audio",
+      "type": "audio",
+      "contentHash": "sha256:0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+      "id": "asset-font",
+      "type": "font",
+      "contentHash": "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-main",
+      "nodes": [
+        {
+          "id": "node-background",
+          "type": "background",
+          "color": "#0b1020"
+        },
+        {
+          "id": "node-group",
+          "type": "group",
+          "position": { "x": 60, "y": 420 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-group-position",
+              "property": "position",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": { "x": 0, "y": 0 } },
+                { "timeUs": 7500000, "value": { "x": 60, "y": 300 } }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "id": "node-image",
+              "type": "image",
+              "position": { "x": 0, "y": 0 },
+              "scale": { "x": 1, "y": 1 },
+              "opacity": 1,
+              "animations": [
+                {
+                  "id": "anim-image-scale",
+                  "property": "scale",
+                  "interpolation": "linear",
+                  "keyframes": [
+                    { "timeUs": 2500000, "value": { "x": 1, "y": 1 } },
+                    { "timeUs": 10000000, "value": { "x": 1.75, "y": 1.375 } }
+                  ]
+                }
+              ],
+              "assetId": "asset-image",
+              "width": 480,
+              "height": 480
+            },
+            {
+              "id": "node-caption",
+              "type": "text",
+              "position": { "x": 0, "y": 720 },
+              "scale": { "x": 1, "y": 1 },
+              "opacity": 1,
+              "animations": [],
+              "text": "Deterministic by design",
+              "fontAssetId": "asset-font",
+              "fontSize": 56,
+              "color": "#d0d5dd"
+            }
+          ]
+        },
+        {
+          "id": "node-title",
+          "type": "text",
+          "position": { "x": 90, "y": 160 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-title-opacity",
+              "property": "opacity",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": 0.25 },
+                { "timeUs": 7500000, "value": 1 }
+              ]
+            }
+          ],
+          "text": "Kadrion",
+          "fontAssetId": "asset-font",
+          "fontSize": 144,
+          "color": "#ffffff"
+        },
+        {
+          "id": "node-custom-html",
+          "type": "custom-html",
+          "position": { "x": 90, "y": 1760 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [],
+          "width": 900,
+          "height": 40,
+          "html": "<!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>addEventListener('message',function(event){var data=event.data;if(!data||data.type!=='kadrion:time')return;document.getElementById('bar').style.width=data.timeUs/100000+'%';parent.postMessage({type:'kadrion:time-ack',timeUs:data.timeUs},'*')})</script>"
+        }
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "clip-audio",
+      "type": "audio",
+      "assetId": "asset-audio",
+      "startUs": 0,
+      "durationUs": 10000000
+    }
+  ]
+}

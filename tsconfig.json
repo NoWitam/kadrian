@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/ai-sdk" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/editor-sdk" },
+    { "path": "./packages/player" },
+    { "path": "./packages/producer" },
+    { "path": "./packages/runtime" },
+    { "path": "./packages/runtime/test" },
+    { "path": "./packages/schema" },
+    { "path": "./packages/schema/test" },
+    { "path": "./packages/test-fixtures" },
+    { "path": "./tests" }
+  ]
+}

@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build and test output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Generated media stays out of Git (AGENTS.md). Committed fixtures such as
+# golden frames and small reference assets are deliberately NOT matched here.
+# Render output directories are added when the Producer defines them.
+*.mp4
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Claude Code per-user settings. The shared .claude/ directory IS versioned.
+.claude/settings.local.json
+
+# Logs and OS noise
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+# Agent instruction files are owned by the project owner and are never
+# auto-formatted or rewritten by tooling.
+AGENTS.md
+CLAUDE.md
+.claude/
+
+# Generated
+pnpm-lock.yaml
+dist/
+coverage/

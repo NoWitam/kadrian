@@ -1,0 +1,31 @@
+{
+  "name": "kadrion-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Engine for describing, previewing, editing, and deterministically rendering video compositions.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@11.27.0+sha512.ad12821463bb143295f1fa3ecde77a6b9b97a7990386da800ff57bffc3964dc64b7b1c7559d5dbe5c337aea659ed9c8937d4370bd198ca2009bc6fa0249808e7",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check": "node --run typecheck && node --run lint && node --run format:check && node --run build && node --run test",
+    "clean": "tsc -b --clean",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "test": "node --run build && vitest run",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.4",
+    "eslint": "10.11.0",
+    "prettier": "3.9.8",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "4.1.11"
+  }
+}

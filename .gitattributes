@@ -1,0 +1,18 @@
+# Text files are stored and checked out with LF on every platform.
+* text=auto eol=lf
+
+# Fixtures must never be line-ending normalised.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.m4a binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
