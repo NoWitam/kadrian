@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "0.1",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "durationUs": 6000000,
+  "assets": [
+    {
+      "id": "asset-font",
+      "type": "font",
+      "contentHash": "sha256:8b9741fd276dd775769286861ad4ff14d651a01aee1fb927cb5a784d3872a4a4"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-main",
+      "nodes": [
+        { "id": "node-background", "type": "background", "color": "#101828" },
+        {
+          "id": "node-heading",
+          "type": "text",
+          "position": { "x": 90, "y": 140 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [],
+          "text": "Kadrion",
+          "fontAssetId": "asset-font",
+          "fontSize": 144,
+          "color": "#ffffff"
+        },
+        {
+          "id": "node-opacity",
+          "type": "text",
+          "position": { "x": 90, "y": 560 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-opacity",
+              "property": "opacity",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": 0 },
+                { "timeUs": 3000000, "value": 1 },
+                { "timeUs": 5900000, "value": 0.2 }
+              ]
+            }
+          ],
+          "text": "dim",
+          "fontAssetId": "asset-font",
+          "fontSize": 120,
+          "color": "#f79009"
+        },
+        {
+          "id": "node-position",
+          "type": "text",
+          "position": { "x": 90, "y": 960 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-position",
+              "property": "position",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": { "x": 0, "y": 0 } },
+                { "timeUs": 3000000, "value": { "x": 420, "y": 0 } },
+                { "timeUs": 5900000, "value": { "x": 420, "y": 240 } }
+              ]
+            }
+          ],
+          "text": "go east",
+          "fontAssetId": "asset-font",
+          "fontSize": 120,
+          "color": "#32d583"
+        },
+        {
+          "id": "node-scale",
+          "type": "text",
+          "position": { "x": 90, "y": 1500 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-scale",
+              "property": "scale",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": { "x": 0.5, "y": 0.5 } },
+                { "timeUs": 5900000, "value": { "x": 2.5, "y": 2.5 } }
+              ]
+            }
+          ],
+          "text": "big",
+          "fontAssetId": "asset-font",
+          "fontSize": 120,
+          "color": "#53b1fd"
+        }
+      ]
+    }
+  ],
+  "clips": []
+}

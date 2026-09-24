@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "0.1",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "durationUs": 8000000,
+  "assets": [
+    {
+      "id": "asset-image",
+      "type": "image",
+      "contentHash": "sha256:9b0906ce8964add6530e7f7ab5058cc1e7c588b1b4dd88729637b72186556da2"
+    },
+    {
+      "id": "asset-font",
+      "type": "font",
+      "contentHash": "sha256:8b9741fd276dd775769286861ad4ff14d651a01aee1fb927cb5a784d3872a4a4"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-main",
+      "nodes": [
+        { "id": "node-background", "type": "background", "color": "#1d2939" },
+        {
+          "id": "node-card",
+          "type": "group",
+          "position": { "x": 140, "y": 360 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-card-scale",
+              "property": "scale",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": { "x": 0.5, "y": 0.5 } },
+                { "timeUs": 4000000, "value": { "x": 1.25, "y": 1.25 } },
+                { "timeUs": 7900000, "value": { "x": 1, "y": 1 } }
+              ]
+            },
+            {
+              "id": "anim-card-opacity",
+              "property": "opacity",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": 0.3 },
+                { "timeUs": 2000000, "value": 1 }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "id": "node-card-image",
+              "type": "image",
+              "position": { "x": 0, "y": 0 },
+              "scale": { "x": 1, "y": 1 },
+              "opacity": 1,
+              "animations": [],
+              "assetId": "asset-image",
+              "width": 640,
+              "height": 640
+            },
+            {
+              "id": "node-card-caption",
+              "type": "text",
+              "position": { "x": 0, "y": 700 },
+              "scale": { "x": 1, "y": 1 },
+              "opacity": 1,
+              "animations": [
+                {
+                  "id": "anim-caption-position",
+                  "property": "position",
+                  "interpolation": "linear",
+                  "keyframes": [
+                    { "timeUs": 2000000, "value": { "x": 0, "y": 80 } },
+                    { "timeUs": 5000000, "value": { "x": 0, "y": 0 } }
+                  ]
+                }
+              ],
+              "text": "Deterministic by design",
+              "fontAssetId": "asset-font",
+              "fontSize": 56,
+              "color": "#d0d5dd"
+            }
+          ]
+        },
+        {
+          "id": "node-title",
+          "type": "text",
+          "position": { "x": 90, "y": 120 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [],
+          "text": "Kadrion",
+          "fontAssetId": "asset-font",
+          "fontSize": 144,
+          "color": "#ffffff"
+        }
+      ]
+    }
+  ],
+  "clips": []
+}

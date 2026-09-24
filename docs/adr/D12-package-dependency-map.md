@@ -1,17 +1,18 @@
 # D12 — Package dependencies follow a machine-checked map
 
-- Status: Proposed — provisionally implemented by PR-00; becomes Accepted only by
-  explicit approval of the project owner
+- Status: Accepted — by the project owner on 2026-09-22, with the ninth package of
+  D20 added by PR-03
 - Date: 2026-09-21
-- Related: D01, D09, D10, D11
+- Related: D01, D09, D10, D11, D20
 
 ## Context
 
-`AGENTS.md` defines eight packages and their responsibilities. It does not say
-which package may depend on which, except that `@kadrion/ai-sdk` is "built on
-editor-sdk commands". Two invariants constrain the edges: "UI and AI never
-mutate renderer internals directly. Both use the same command bus." and "The
-browser Player and server Producer execute the same runtime build."
+`AGENTS.md` defines the packages and their responsibilities (eight in PR-00, nine
+since D20). It does not say which package may depend on which, except that
+`@kadrion/ai-sdk` is "built on editor-sdk commands". Two invariants constrain
+the edges: "UI and AI never mutate renderer internals directly. Both use the
+same command bus." and "The browser Player and server Producer execute the same
+runtime build."
 
 pnpm's strict `node_modules` layout (D11) lets a package import only what its
 manifest declares. Checking declared dependencies against a map is therefore
@@ -24,6 +25,9 @@ root ones, are resolvable from `packages/<name>/src` by walking up to a
 manifest check noticing. The boundary test now also scans the bare import
 specifiers in `packages/*/src` (see "Further rules").
 
+Amended by PR-03 on 2026-09-22: the project owner answered open question Q15
+with a ninth package, `@kadrion/renderer-dom` (D20). The map below includes it.
+
 The identifier D12 may collide with a decision defined in the missing
 `/bootstrap-kadrion` skill (see D11); the project owner should confirm it.
 
@@ -33,16 +37,17 @@ The allowed dependency edges between workspace packages are recorded in
 [`docs/architecture/package-boundaries.json`](../architecture/package-boundaries.json)
 and enforced by `tests/repo/package-boundaries.test.ts`.
 
-| Package         | May depend on (runtime) |
-| --------------- | ----------------------- |
-| `schema`        | —                       |
-| `runtime`       | `schema`                |
-| `editor-sdk`    | `schema`                |
-| `ai-sdk`        | `editor-sdk`, `schema`  |
-| `player`        | `runtime`, `schema`     |
-| `producer`      | `runtime`, `schema`     |
-| `cli`           | `producer`, `schema`    |
-| `test-fixtures` | — (dev-only, pure data) |
+| Package         | May depend on (runtime)             |
+| --------------- | ----------------------------------- |
+| `schema`        | —                                   |
+| `runtime`       | `schema`                            |
+| `editor-sdk`    | `schema`                            |
+| `ai-sdk`        | `editor-sdk`, `schema`              |
+| `renderer-dom`  | `runtime`, `schema`                 |
+| `player`        | `renderer-dom`, `runtime`, `schema` |
+| `producer`      | `renderer-dom`, `runtime`, `schema` |
+| `cli`           | `producer`, `schema`                |
+| `test-fixtures` | — (dev-only, pure data)             |
 
 Every edge falls into one of three categories:
 
@@ -55,12 +60,14 @@ Every edge falls into one of three categories:
 
 Prohibitions:
 
-| From                    | To                              | Reason                                                                                                 |
-| ----------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `schema`                | anything                        | The schema is the persistent data contract and the root of the graph                                   |
-| `test-fixtures`         | anything                        | Fixtures are pure data; every package may devDepend on them, so any outgoing edge would create a cycle |
-| `editor-sdk`, `ai-sdk`  | `runtime`, `player`, `producer` | Commands are document transforms; UI and AI share one command bus that must work without a renderer    |
-| `producer` and `player` | each other                      | They share the runtime build; shared code moves down into `runtime`, never sideways                    |
+| From                    | To                                              | Reason                                                                                                 |
+| ----------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `schema`                | anything                                        | The schema is the persistent data contract and the root of the graph                                   |
+| `test-fixtures`         | anything                                        | Fixtures are pure data; every package may devDepend on them, so any outgoing edge would create a cycle |
+| `editor-sdk`, `ai-sdk`  | `runtime`, `renderer-dom`, `player`, `producer` | Commands are document transforms; UI and AI share one command bus that must work without a renderer    |
+| `producer` and `player` | each other                                      | They share the runtime build; shared code moves down into `renderer-dom` or `runtime`, never sideways  |
+| `runtime`               | `renderer-dom`                                  | The evaluation stays free of any environment; rendering builds on it, never the reverse (D20)          |
+| `renderer-dom`          | `player`, `producer`                            | Both hosts load the renderer as part of the one runtime build; it cannot know either host (D20)        |
 
 Further rules enforced by the same test:
 
@@ -76,9 +83,9 @@ Further rules enforced by the same test:
   that manifest's `dependencies`, `peerDependencies`, or
   `optionalDependencies`. Test directories are not restricted.
 - The set of packages equals the list in `AGENTS.md`
-  (`tests/repo/workspace-structure.test.ts`). Adding a ninth package therefore
+  (`tests/repo/workspace-structure.test.ts`). Adding a package therefore
   requires changing `AGENTS.md`, which is the project owner's call and deserves
-  an ADR.
+  an ADR, as D20 did for the ninth.
 
 ## Alternatives considered
 
@@ -96,10 +103,10 @@ Further rules enforced by the same test:
   licence. (Amended by PR-01 on 2026-09-21: this did not happen. The validator
   proposed in D17 has no runtime dependency, so the allowlist is still empty.)
 - If the spike shows that the Producer should reuse Player code, that code moves
-  into `runtime`, or the prohibition is lifted by an ADR. The same holds for
+  into `renderer-dom` or `runtime`, or the prohibition is lifted by an ADR. The same holds for
   `editor-sdk` needing anything from the renderer side.
-- Where the DOM/SVG renderer and the Custom HTML sandbox mount live is not
-  decided here (specification, open question Q15).
+- Where the DOM/SVG renderer and the Custom HTML sandbox mount live was open
+  question Q15; D20 answers it with `@kadrion/renderer-dom`.
 
 ## Verification
 

@@ -1,7 +1,24 @@
 /**
  * @kadrion/player — browser host, iframe protocol, playback and seek.
  *
- * Skeleton only. PR-00 deliberately ships no API; the first implementation
- * arrives with the pull request named in docs/spike/vertical-spike.md.
+ * `createPlayer` puts the render page of `@kadrion/renderer-dom` into a
+ * sandboxed frame, runs the verified runtime build in it, and offers `load`,
+ * `seek`, `play`, and `pause` (D25). The Player decides no pixel and loads
+ * nothing but the runtime build and the asset bytes the application passes.
+ * D25 is Proposed and may change until the project owner accepts it.
  */
-export {};
+export { PlayerError } from './errors.js';
+export type { PlayerErrorCode } from './errors.js';
+export { createPlayer } from './player.js';
+export type {
+  Player,
+  PlayerAsset,
+  PlayerAssetRequest,
+  PlayerAssetResolver,
+  PlayerOptions,
+  PlayerRuntime,
+  PlayerScheduler,
+  PlayerState,
+  PlayerStatus,
+  PlayerTimers,
+} from './player.js';

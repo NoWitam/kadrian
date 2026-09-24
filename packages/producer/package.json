@@ -13,5 +13,13 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@kadrion/renderer-dom": "workspace:*",
+    "@kadrion/schema": "workspace:*",
+    "playwright-core": "1.63.0"
+  },
+  "devDependencies": {
+    "@kadrion/test-fixtures": "workspace:*"
+  }
 }

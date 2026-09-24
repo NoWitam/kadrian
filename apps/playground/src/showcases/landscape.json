@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "0.1",
+  "width": 1920,
+  "height": 1080,
+  "fps": 24,
+  "durationUs": 5000000,
+  "assets": [
+    {
+      "id": "asset-image",
+      "type": "image",
+      "contentHash": "sha256:9b0906ce8964add6530e7f7ab5058cc1e7c588b1b4dd88729637b72186556da2"
+    },
+    {
+      "id": "asset-audio",
+      "type": "audio",
+      "contentHash": "sha256:a383506e57b39f51b8952cff8a82f2a058e4d07b8c970068b8af84f72d058f97"
+    },
+    {
+      "id": "asset-font",
+      "type": "font",
+      "contentHash": "sha256:8b9741fd276dd775769286861ad4ff14d651a01aee1fb927cb5a784d3872a4a4"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-main",
+      "nodes": [
+        { "id": "node-background", "type": "background", "color": "#0c111d" },
+        {
+          "id": "node-image",
+          "type": "image",
+          "position": { "x": 120, "y": 240 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-image-position",
+              "property": "position",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 0, "value": { "x": -600, "y": 0 } },
+                { "timeUs": 1500000, "value": { "x": 0, "y": 0 } }
+              ]
+            }
+          ],
+          "assetId": "asset-image",
+          "width": 600,
+          "height": 600
+        },
+        {
+          "id": "node-title",
+          "type": "text",
+          "position": { "x": 860, "y": 360 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-title-opacity",
+              "property": "opacity",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 1000000, "value": 0 },
+                { "timeUs": 2500000, "value": 1 }
+              ]
+            }
+          ],
+          "text": "Kadrion",
+          "fontAssetId": "asset-font",
+          "fontSize": 200,
+          "color": "#ffffff"
+        },
+        {
+          "id": "node-subtitle",
+          "type": "text",
+          "position": { "x": 860, "y": 620 },
+          "scale": { "x": 1, "y": 1 },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-subtitle-position",
+              "property": "position",
+              "interpolation": "linear",
+              "keyframes": [
+                { "timeUs": 2000000, "value": { "x": 0, "y": 60 } },
+                { "timeUs": 3500000, "value": { "x": 0, "y": 0 } }
+              ]
+            }
+          ],
+          "text": "a stage",
+          "fontAssetId": "asset-font",
+          "fontSize": 72,
+          "color": "#98a2b3"
+        }
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "clip-audio",
+      "type": "audio",
+      "assetId": "asset-audio",
+      "startUs": 0,
+      "durationUs": 5000000
+    }
+  ]
+}

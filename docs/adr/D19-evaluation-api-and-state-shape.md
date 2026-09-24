@@ -1,7 +1,6 @@
 # D19 — Evaluation API and state shape
 
-- Status: Proposed — provisionally implemented by PR-02; becomes Accepted only by
-  explicit approval of the project owner
+- Status: Accepted — by the project owner on 2026-09-22
 - Date: 2026-09-21
 - Supersedes: —
 - Related: D03, D12, D14, D15, D16, D17, D18,

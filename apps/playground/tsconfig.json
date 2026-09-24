@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "resolveJsonModule": true
+  },
+  "include": ["src", "src/**/*.json"],
+  "references": [
+    {
+      "path": "../../packages/ai-sdk"
+    },
+    {
+      "path": "../../packages/editor-sdk"
+    },
+    {
+      "path": "../../packages/player"
+    },
+    {
+      "path": "../../packages/schema"
+    },
+    {
+      "path": "../../packages/test-fixtures"
+    }
+  ]
+}

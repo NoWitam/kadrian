@@ -10,6 +10,10 @@ coverage/
 # golden frames and small reference assets are deliberately NOT matched here.
 # Render output directories are added when the Producer defines them.
 *.mp4
+# Reports, measurements, and CLI output of the Producer and the browser tests (D28).
+.kadrion-out/
+# The pinned FFmpeg build, downloaded and verified by node --run ffmpeg:fetch (D29.1).
+.kadrion-cache/
 
 # Secrets and local environment
 .env

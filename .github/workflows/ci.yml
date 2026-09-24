@@ -1,0 +1,70 @@
+# CI in the pinned render environment (D26.6). UNVERIFIED: nothing has been
+# pushed yet, so this workflow has never run; its first run is the first
+# evidence that it works (Q14 stays open until then, see docs/ci/first-run.md).
+# This job has a network, so it is not the reference run of D28.9: golden frames
+# come only from tests/pinned/container/pinned-run.sh with --network none, and
+# the WebRTC checks here report instead of asserting. The parity gate of D34
+# applies here, because KADRION_PINNED_IMAGE names the pinned image; a failing
+# gate fails the job and never updates golden frames. Since PR-13 the job also
+# writes .kadrion-out/pinned-test-summary.json and .kadrion-out/ci-identity.json,
+# the evidence that tests/repo/q14-evidence.ts checks when Q14 closes.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned:
+    runs-on: ubuntu-24.04
+    container:
+      # The tag's version equals the playwright-core version (D26.1); the digest pins it.
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --platform linux/amd64 --ipc=host
+    env:
+      KADRION_PINNED_IMAGE: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Environment
+        run: node --version && uname -m
+      - name: Install
+        run: corepack pnpm install --frozen-lockfile
+      - name: Check
+        run: corepack pnpm run check
+      # The pinned FFmpeg of D29.1, verified by its checksums; never one from PATH.
+      - name: Pinned FFmpeg
+        run: node --run ffmpeg:fetch
+      # Inside a container job the workspace is $GITHUB_WORKSPACE (/__w/…); the
+      # workspace expression of the github context names the runner's path, which
+      # the container does not see.
+      - name: Browser and export tests in the pinned environment
+        run: |
+          export KADRION_FFMPEG="$GITHUB_WORKSPACE/.kadrion-cache/ffmpeg/autobuild-2026-09-21-13-55/bin/ffmpeg"
+          export KADRION_FFPROBE="$GITHUB_WORKSPACE/.kadrion-cache/ffmpeg/autobuild-2026-09-21-13-55/bin/ffprobe"
+          node --run test:pinned
+      # The evidence of the run (owner, 2026-09-24; docs/ci/first-run.md). Both steps
+      # run whatever happened before: a missing report is an evidence error that
+      # fails the job, and the Reports step still publishes everything there is.
+      # The identity comes last, because it binds the other reports by hash.
+      - name: Pinned test summary
+        if: always()
+        run: node --experimental-strip-types tests/ci/write-pinned-summary.ts
+      - name: CI identity
+        if: always()
+        run: |
+          export KADRION_FFMPEG="$GITHUB_WORKSPACE/.kadrion-cache/ffmpeg/autobuild-2026-09-21-13-55/bin/ffmpeg"
+          export KADRION_FFPROBE="$GITHUB_WORKSPACE/.kadrion-cache/ffmpeg/autobuild-2026-09-21-13-55/bin/ffprobe"
+          node --experimental-strip-types tests/ci/write-ci-identity.ts
+      # .kadrion-out is a hidden directory, which upload-artifact leaves out by default.
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kadrion-reports
+          path: .kadrion-out/
+          include-hidden-files: true
+          if-no-files-found: warn

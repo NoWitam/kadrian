@@ -1,16 +1,27 @@
 {
   "files": [],
   "references": [
+    { "path": "./apps/playground" },
+    { "path": "./apps/playground/scripts" },
     { "path": "./packages/ai-sdk" },
+    { "path": "./packages/ai-sdk/test" },
     { "path": "./packages/cli" },
+    { "path": "./packages/cli/test" },
     { "path": "./packages/editor-sdk" },
+    { "path": "./packages/editor-sdk/test" },
     { "path": "./packages/player" },
+    { "path": "./packages/player/test" },
     { "path": "./packages/producer" },
+    { "path": "./packages/producer/test" },
+    { "path": "./packages/renderer-dom" },
+    { "path": "./packages/renderer-dom/test" },
     { "path": "./packages/runtime" },
     { "path": "./packages/runtime/test" },
     { "path": "./packages/schema" },
     { "path": "./packages/schema/test" },
     { "path": "./packages/test-fixtures" },
-    { "path": "./tests" }
+    { "path": "./packages/test-fixtures/test" },
+    { "path": "./tests" },
+    { "path": "./tests/pinned" }
   ]
 }

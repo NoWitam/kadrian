@@ -1,0 +1,1009 @@
+{
+  "description": "Expected DOM tree that @kadrion/renderer-dom produces for reference.json at the five golden timestamps: mountComposition(root, reference, assetUrls) once, then renderState(root, evaluateComposition(reference, timeUs)). Pure data, derived by hand from reference.expected-state.json and the rule below (D22), never generated from an implementation. `customHtml` lists, per golden timestamp, the one message that synchronizeCustomHtml posts to each Custom HTML element and the one acknowledgement it accepts (D23.3, D23.4), assuming that the host passes the frame index of the golden timestamp as its request ID, as the Producer will. Each `tree` is the one element that the renderer places in `root`: every element with its tag, all of its attributes, all of its inline style declarations, and all of its child nodes, nothing more.",
+  "rule": [
+    "Numbers (D22.1): an evaluated number is written as String(n), the ECMAScript Number::toString; a length appends px. Nothing is rounded.",
+    "Transform and opacity (D22.2): every transformed node gets transform: translate(<x>px, <y>px) scale(<sx>, <sy>) and opacity: <o> from its own state, and transform-origin: 0px 0px. No element gets a z-index; DOM order is the array order.",
+    "Elements (D22.3): stage div [data-kadrion-composition=\"\"] with position relative, width and height of the canvas, overflow hidden; one scene div [data-kadrion-scene] per scene, absolute at 0px 0px with the canvas size; background div with the scene styles plus background-color; group div with position absolute, left 0px, top 0px, transform-origin 0px 0px; image img [src, alt=\"\"] with the group styles plus display block, width, height, object-fit fill; text div with the group styles plus white-space pre, font-family kadrion-font-<fontAssetId>, font-size, line-height 1.25, font-weight 400, font-style normal, color, and one text node; custom-html div with the group styles plus width and height and exactly one child, the iframe of D23.1.",
+    "Colours: #rrggbb is written as rgb(r, g, b) with decimal channels: #0b1020 is rgb(11, 16, 32), #d0d5dd is rgb(208, 213, 221), #ffffff is rgb(255, 255, 255).",
+    "Asset URLs: the host passes `assetUrls` below; src of the image is its entry, and the font URL is required but registers no font face (D22.6).",
+    "Static values from reference.json: canvas 1080 x 1920; node-image 400 x 400, asset-image; node-caption 56px, #d0d5dd, \"Deterministic by design\"; node-title 144px, #ffffff, \"Kadrion\"; both texts use asset-font; node-custom-html 900 x 40.",
+    "Custom HTML element (D23.1, D23.2): iframe with the attributes sandbox=\"allow-scripts\" and srcdoc, in this order, and the styles display block, width and height of the node, and border-top-style, border-right-style, border-bottom-style, border-left-style none. srcdoc is the shell <!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"<nodeId>\"></head> followed by the html of the node byte for byte. renderState writes nothing to the iframe.",
+    "Messages (D23.3): the host posts {type: \"kadrion:time\", version: 1, instanceId: <nodeId>, requestId, timeUs} directly to the contentWindow of that iframe and accepts exactly {type: \"kadrion:time-ack\", version: 1, instanceId, requestId, timeUs} with the same values, and only from that contentWindow. requestId is the frame index of the golden timestamp (0, 75, 150, 225, 297)."
+  ],
+  "assetUrls": {
+    "asset-image": "https://assets.invalid/asset-image",
+    "asset-font": "https://assets.invalid/asset-font"
+  },
+  "golden": [
+    {
+      "timeUs": 0,
+      "derivation": [
+        "node-group: position (76, 428), scale (1, 1), opacity 1 from the expected state give translate(76px, 428px) scale(1, 1) and 1.",
+        "node-image: position (0, 0), scale (1.25, 1.25) give translate(0px, 0px) scale(1.25, 1.25); opacity 1.",
+        "node-caption: translate(0px, 720px) scale(1, 1); opacity 1.",
+        "node-title: translate(90px, 160px) scale(1, 1); opacity 0.1875, String(0.1875) = \"0.1875\".",
+        "node-custom-html: translate(90px, 1760px) scale(1, 1); opacity 1.",
+        "node-custom-html: the host posts {type: \"kadrion:time\", version: 1, instanceId: \"node-custom-html\", requestId: 0, timeUs: 0} and accepts the same values as \"kadrion:time-ack\" from that frame only; the fixture element sets its bar to 0 / 100000 = 0% before it answers (checked in pixels by PR-06, not here)."
+      ],
+      "tree": {
+        "tag": "div",
+        "attributes": {
+          "data-kadrion-composition": ""
+        },
+        "style": {
+          "position": "relative",
+          "width": "1080px",
+          "height": "1920px",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "data-kadrion-scene": "scene-main"
+            },
+            "style": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "width": "1080px",
+              "height": "1920px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-background"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "width": "1080px",
+                  "height": "1920px",
+                  "background-color": "rgb(11, 16, 32)"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-group"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "transform": "translate(76px, 428px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "img",
+                    "attributes": {
+                      "data-kadrion-node": "node-image",
+                      "src": "https://assets.invalid/asset-image",
+                      "alt": ""
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "display": "block",
+                      "width": "400px",
+                      "height": "400px",
+                      "object-fit": "fill",
+                      "transform": "translate(0px, 0px) scale(1.25, 1.25)",
+                      "opacity": "1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "data-kadrion-node": "node-caption"
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "white-space": "pre",
+                      "font-family": "kadrion-font-asset-font",
+                      "font-size": "56px",
+                      "line-height": "1.25",
+                      "font-weight": "400",
+                      "font-style": "normal",
+                      "color": "rgb(208, 213, 221)",
+                      "transform": "translate(0px, 720px) scale(1, 1)",
+                      "opacity": "1"
+                    },
+                    "children": [
+                      {
+                        "text": "Deterministic by design"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-title"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "white-space": "pre",
+                  "font-family": "kadrion-font-asset-font",
+                  "font-size": "144px",
+                  "line-height": "1.25",
+                  "font-weight": "400",
+                  "font-style": "normal",
+                  "color": "rgb(255, 255, 255)",
+                  "transform": "translate(90px, 160px) scale(1, 1)",
+                  "opacity": "0.1875"
+                },
+                "children": [
+                  {
+                    "text": "Kadrion"
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-custom-html"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "width": "900px",
+                  "height": "40px",
+                  "transform": "translate(90px, 1760px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "iframe",
+                    "attributes": {
+                      "sandbox": "allow-scripts",
+                      "srcdoc": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"node-custom-html\"></head><!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;document.getElementById('bar').style.width=data.timeUs/100000+'%';window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+                    },
+                    "style": {
+                      "display": "block",
+                      "width": "900px",
+                      "height": "40px",
+                      "border-top-style": "none",
+                      "border-right-style": "none",
+                      "border-bottom-style": "none",
+                      "border-left-style": "none"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "customHtml": [
+        {
+          "nodeId": "node-custom-html",
+          "post": {
+            "type": "kadrion:time",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 0,
+            "timeUs": 0
+          },
+          "acknowledgement": {
+            "type": "kadrion:time-ack",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 0,
+            "timeUs": 0
+          }
+        }
+      ]
+    },
+    {
+      "timeUs": 2500000,
+      "derivation": [
+        "node-group: position (96, 528) gives translate(96px, 528px) scale(1, 1); opacity 1.",
+        "node-image: scale (1.25, 1.25) gives translate(0px, 0px) scale(1.25, 1.25); opacity 1.",
+        "node-caption: translate(0px, 720px) scale(1, 1); opacity 1.",
+        "node-title: translate(90px, 160px) scale(1, 1); opacity 0.375, String(0.375) = \"0.375\".",
+        "node-custom-html: translate(90px, 1760px) scale(1, 1); opacity 1.",
+        "node-custom-html: the host posts {type: \"kadrion:time\", version: 1, instanceId: \"node-custom-html\", requestId: 75, timeUs: 2500000} and accepts the same values as \"kadrion:time-ack\" from that frame only; the fixture element sets its bar to 2500000 / 100000 = 25% before it answers (checked in pixels by PR-06, not here)."
+      ],
+      "tree": {
+        "tag": "div",
+        "attributes": {
+          "data-kadrion-composition": ""
+        },
+        "style": {
+          "position": "relative",
+          "width": "1080px",
+          "height": "1920px",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "data-kadrion-scene": "scene-main"
+            },
+            "style": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "width": "1080px",
+              "height": "1920px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-background"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "width": "1080px",
+                  "height": "1920px",
+                  "background-color": "rgb(11, 16, 32)"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-group"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "transform": "translate(96px, 528px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "img",
+                    "attributes": {
+                      "data-kadrion-node": "node-image",
+                      "src": "https://assets.invalid/asset-image",
+                      "alt": ""
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "display": "block",
+                      "width": "400px",
+                      "height": "400px",
+                      "object-fit": "fill",
+                      "transform": "translate(0px, 0px) scale(1.25, 1.25)",
+                      "opacity": "1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "data-kadrion-node": "node-caption"
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "white-space": "pre",
+                      "font-family": "kadrion-font-asset-font",
+                      "font-size": "56px",
+                      "line-height": "1.25",
+                      "font-weight": "400",
+                      "font-style": "normal",
+                      "color": "rgb(208, 213, 221)",
+                      "transform": "translate(0px, 720px) scale(1, 1)",
+                      "opacity": "1"
+                    },
+                    "children": [
+                      {
+                        "text": "Deterministic by design"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-title"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "white-space": "pre",
+                  "font-family": "kadrion-font-asset-font",
+                  "font-size": "144px",
+                  "line-height": "1.25",
+                  "font-weight": "400",
+                  "font-style": "normal",
+                  "color": "rgb(255, 255, 255)",
+                  "transform": "translate(90px, 160px) scale(1, 1)",
+                  "opacity": "0.375"
+                },
+                "children": [
+                  {
+                    "text": "Kadrion"
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-custom-html"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "width": "900px",
+                  "height": "40px",
+                  "transform": "translate(90px, 1760px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "iframe",
+                    "attributes": {
+                      "sandbox": "allow-scripts",
+                      "srcdoc": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"node-custom-html\"></head><!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;document.getElementById('bar').style.width=data.timeUs/100000+'%';window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+                    },
+                    "style": {
+                      "display": "block",
+                      "width": "900px",
+                      "height": "40px",
+                      "border-top-style": "none",
+                      "border-right-style": "none",
+                      "border-bottom-style": "none",
+                      "border-left-style": "none"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "customHtml": [
+        {
+          "nodeId": "node-custom-html",
+          "post": {
+            "type": "kadrion:time",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 75,
+            "timeUs": 2500000
+          },
+          "acknowledgement": {
+            "type": "kadrion:time-ack",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 75,
+            "timeUs": 2500000
+          }
+        }
+      ]
+    },
+    {
+      "timeUs": 5000000,
+      "derivation": [
+        "node-group: position (116, 628) gives translate(116px, 628px) scale(1, 1); opacity 1.",
+        "node-image: scale (1.5625, 1.40625) gives translate(0px, 0px) scale(1.5625, 1.40625); both are dyadic, so String yields their exact decimals; opacity 1.",
+        "node-caption: translate(0px, 720px) scale(1, 1); opacity 1.",
+        "node-title: translate(90px, 160px) scale(1, 1); opacity 0.5625, String(0.5625) = \"0.5625\".",
+        "node-custom-html: translate(90px, 1760px) scale(1, 1); opacity 1.",
+        "node-custom-html: the host posts {type: \"kadrion:time\", version: 1, instanceId: \"node-custom-html\", requestId: 150, timeUs: 5000000} and accepts the same values as \"kadrion:time-ack\" from that frame only; the fixture element sets its bar to 5000000 / 100000 = 50% before it answers (checked in pixels by PR-06, not here)."
+      ],
+      "tree": {
+        "tag": "div",
+        "attributes": {
+          "data-kadrion-composition": ""
+        },
+        "style": {
+          "position": "relative",
+          "width": "1080px",
+          "height": "1920px",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "data-kadrion-scene": "scene-main"
+            },
+            "style": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "width": "1080px",
+              "height": "1920px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-background"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "width": "1080px",
+                  "height": "1920px",
+                  "background-color": "rgb(11, 16, 32)"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-group"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "transform": "translate(116px, 628px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "img",
+                    "attributes": {
+                      "data-kadrion-node": "node-image",
+                      "src": "https://assets.invalid/asset-image",
+                      "alt": ""
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "display": "block",
+                      "width": "400px",
+                      "height": "400px",
+                      "object-fit": "fill",
+                      "transform": "translate(0px, 0px) scale(1.5625, 1.40625)",
+                      "opacity": "1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "data-kadrion-node": "node-caption"
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "white-space": "pre",
+                      "font-family": "kadrion-font-asset-font",
+                      "font-size": "56px",
+                      "line-height": "1.25",
+                      "font-weight": "400",
+                      "font-style": "normal",
+                      "color": "rgb(208, 213, 221)",
+                      "transform": "translate(0px, 720px) scale(1, 1)",
+                      "opacity": "1"
+                    },
+                    "children": [
+                      {
+                        "text": "Deterministic by design"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-title"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "white-space": "pre",
+                  "font-family": "kadrion-font-asset-font",
+                  "font-size": "144px",
+                  "line-height": "1.25",
+                  "font-weight": "400",
+                  "font-style": "normal",
+                  "color": "rgb(255, 255, 255)",
+                  "transform": "translate(90px, 160px) scale(1, 1)",
+                  "opacity": "0.5625"
+                },
+                "children": [
+                  {
+                    "text": "Kadrion"
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-custom-html"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "width": "900px",
+                  "height": "40px",
+                  "transform": "translate(90px, 1760px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "iframe",
+                    "attributes": {
+                      "sandbox": "allow-scripts",
+                      "srcdoc": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"node-custom-html\"></head><!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;document.getElementById('bar').style.width=data.timeUs/100000+'%';window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+                    },
+                    "style": {
+                      "display": "block",
+                      "width": "900px",
+                      "height": "40px",
+                      "border-top-style": "none",
+                      "border-right-style": "none",
+                      "border-bottom-style": "none",
+                      "border-left-style": "none"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "customHtml": [
+        {
+          "nodeId": "node-custom-html",
+          "post": {
+            "type": "kadrion:time",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 150,
+            "timeUs": 5000000
+          },
+          "acknowledgement": {
+            "type": "kadrion:time-ack",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 150,
+            "timeUs": 5000000
+          }
+        }
+      ]
+    },
+    {
+      "timeUs": 7500000,
+      "derivation": [
+        "node-group: position (136, 728) gives translate(136px, 728px) scale(1, 1); opacity 1.",
+        "node-image: scale (1.875, 1.5625) gives translate(0px, 0px) scale(1.875, 1.5625); opacity 1.",
+        "node-caption: translate(0px, 720px) scale(1, 1); opacity 1.",
+        "node-title: translate(90px, 160px) scale(1, 1); opacity 0.75, String(0.75) = \"0.75\".",
+        "node-custom-html: translate(90px, 1760px) scale(1, 1); opacity 1.",
+        "node-custom-html: the host posts {type: \"kadrion:time\", version: 1, instanceId: \"node-custom-html\", requestId: 225, timeUs: 7500000} and accepts the same values as \"kadrion:time-ack\" from that frame only; the fixture element sets its bar to 7500000 / 100000 = 75% before it answers (checked in pixels by PR-06, not here)."
+      ],
+      "tree": {
+        "tag": "div",
+        "attributes": {
+          "data-kadrion-composition": ""
+        },
+        "style": {
+          "position": "relative",
+          "width": "1080px",
+          "height": "1920px",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "data-kadrion-scene": "scene-main"
+            },
+            "style": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "width": "1080px",
+              "height": "1920px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-background"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "width": "1080px",
+                  "height": "1920px",
+                  "background-color": "rgb(11, 16, 32)"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-group"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "transform": "translate(136px, 728px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "img",
+                    "attributes": {
+                      "data-kadrion-node": "node-image",
+                      "src": "https://assets.invalid/asset-image",
+                      "alt": ""
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "display": "block",
+                      "width": "400px",
+                      "height": "400px",
+                      "object-fit": "fill",
+                      "transform": "translate(0px, 0px) scale(1.875, 1.5625)",
+                      "opacity": "1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "data-kadrion-node": "node-caption"
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "white-space": "pre",
+                      "font-family": "kadrion-font-asset-font",
+                      "font-size": "56px",
+                      "line-height": "1.25",
+                      "font-weight": "400",
+                      "font-style": "normal",
+                      "color": "rgb(208, 213, 221)",
+                      "transform": "translate(0px, 720px) scale(1, 1)",
+                      "opacity": "1"
+                    },
+                    "children": [
+                      {
+                        "text": "Deterministic by design"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-title"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "white-space": "pre",
+                  "font-family": "kadrion-font-asset-font",
+                  "font-size": "144px",
+                  "line-height": "1.25",
+                  "font-weight": "400",
+                  "font-style": "normal",
+                  "color": "rgb(255, 255, 255)",
+                  "transform": "translate(90px, 160px) scale(1, 1)",
+                  "opacity": "0.75"
+                },
+                "children": [
+                  {
+                    "text": "Kadrion"
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-custom-html"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "width": "900px",
+                  "height": "40px",
+                  "transform": "translate(90px, 1760px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "iframe",
+                    "attributes": {
+                      "sandbox": "allow-scripts",
+                      "srcdoc": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"node-custom-html\"></head><!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;document.getElementById('bar').style.width=data.timeUs/100000+'%';window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+                    },
+                    "style": {
+                      "display": "block",
+                      "width": "900px",
+                      "height": "40px",
+                      "border-top-style": "none",
+                      "border-right-style": "none",
+                      "border-bottom-style": "none",
+                      "border-left-style": "none"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "customHtml": [
+        {
+          "nodeId": "node-custom-html",
+          "post": {
+            "type": "kadrion:time",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 225,
+            "timeUs": 7500000
+          },
+          "acknowledgement": {
+            "type": "kadrion:time-ack",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 225,
+            "timeUs": 7500000
+          }
+        }
+      ]
+    },
+    {
+      "timeUs": 9900000,
+      "derivation": [
+        "node-group: position (136, 728) gives translate(136px, 728px) scale(1, 1); opacity 1.",
+        "node-image: scale x is the double of 2.175, whose shortest decimal is \"2.175\"; scale y is 7 712 414 361 871 975 * 2^-52, whose shortest decimal is \"1.7125000000000001\" (derived in reference.expected-state.json). translate(0px, 0px) scale(2.175, 1.7125000000000001); opacity 1. A renderer that rounds or fixes digits writes 1.7125 here.",
+        "node-caption: translate(0px, 720px) scale(1, 1); opacity 1.",
+        "node-title: translate(90px, 160px) scale(1, 1); opacity 0.75.",
+        "node-custom-html: translate(90px, 1760px) scale(1, 1); opacity 1.",
+        "node-custom-html: the host posts {type: \"kadrion:time\", version: 1, instanceId: \"node-custom-html\", requestId: 297, timeUs: 9900000} and accepts the same values as \"kadrion:time-ack\" from that frame only; the fixture element sets its bar to 9900000 / 100000 = 99% before it answers (checked in pixels by PR-06, not here)."
+      ],
+      "tree": {
+        "tag": "div",
+        "attributes": {
+          "data-kadrion-composition": ""
+        },
+        "style": {
+          "position": "relative",
+          "width": "1080px",
+          "height": "1920px",
+          "overflow": "hidden"
+        },
+        "children": [
+          {
+            "tag": "div",
+            "attributes": {
+              "data-kadrion-scene": "scene-main"
+            },
+            "style": {
+              "position": "absolute",
+              "left": "0px",
+              "top": "0px",
+              "width": "1080px",
+              "height": "1920px"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-background"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "width": "1080px",
+                  "height": "1920px",
+                  "background-color": "rgb(11, 16, 32)"
+                },
+                "children": []
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-group"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "transform": "translate(136px, 728px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "img",
+                    "attributes": {
+                      "data-kadrion-node": "node-image",
+                      "src": "https://assets.invalid/asset-image",
+                      "alt": ""
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "display": "block",
+                      "width": "400px",
+                      "height": "400px",
+                      "object-fit": "fill",
+                      "transform": "translate(0px, 0px) scale(2.175, 1.7125000000000001)",
+                      "opacity": "1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "tag": "div",
+                    "attributes": {
+                      "data-kadrion-node": "node-caption"
+                    },
+                    "style": {
+                      "position": "absolute",
+                      "left": "0px",
+                      "top": "0px",
+                      "transform-origin": "0px 0px",
+                      "white-space": "pre",
+                      "font-family": "kadrion-font-asset-font",
+                      "font-size": "56px",
+                      "line-height": "1.25",
+                      "font-weight": "400",
+                      "font-style": "normal",
+                      "color": "rgb(208, 213, 221)",
+                      "transform": "translate(0px, 720px) scale(1, 1)",
+                      "opacity": "1"
+                    },
+                    "children": [
+                      {
+                        "text": "Deterministic by design"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-title"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "white-space": "pre",
+                  "font-family": "kadrion-font-asset-font",
+                  "font-size": "144px",
+                  "line-height": "1.25",
+                  "font-weight": "400",
+                  "font-style": "normal",
+                  "color": "rgb(255, 255, 255)",
+                  "transform": "translate(90px, 160px) scale(1, 1)",
+                  "opacity": "0.75"
+                },
+                "children": [
+                  {
+                    "text": "Kadrion"
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attributes": {
+                  "data-kadrion-node": "node-custom-html"
+                },
+                "style": {
+                  "position": "absolute",
+                  "left": "0px",
+                  "top": "0px",
+                  "transform-origin": "0px 0px",
+                  "width": "900px",
+                  "height": "40px",
+                  "transform": "translate(90px, 1760px) scale(1, 1)",
+                  "opacity": "1"
+                },
+                "children": [
+                  {
+                    "tag": "iframe",
+                    "attributes": {
+                      "sandbox": "allow-scripts",
+                      "srcdoc": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"kadrion-instance\" content=\"node-custom-html\"></head><!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#1d2939}#bar{width:0;height:100%;background:#f79009}</style><div id='bar'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;document.getElementById('bar').style.width=data.timeUs/100000+'%';window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+                    },
+                    "style": {
+                      "display": "block",
+                      "width": "900px",
+                      "height": "40px",
+                      "border-top-style": "none",
+                      "border-right-style": "none",
+                      "border-bottom-style": "none",
+                      "border-left-style": "none"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "customHtml": [
+        {
+          "nodeId": "node-custom-html",
+          "post": {
+            "type": "kadrion:time",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 297,
+            "timeUs": 9900000
+          },
+          "acknowledgement": {
+            "type": "kadrion:time-ack",
+            "version": 1,
+            "instanceId": "node-custom-html",
+            "requestId": 297,
+            "timeUs": 9900000
+          }
+        }
+      ]
+    }
+  ]
+}

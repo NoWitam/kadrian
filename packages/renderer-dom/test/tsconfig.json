@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true,
+    "types": ["node"],
+    "tsBuildInfoFile": "../../../node_modules/.cache/tsbuildinfo/renderer-dom-test.tsbuildinfo"
+  },
+  "include": ["./**/*.ts", "../scripts/**/*.ts"],
+  "references": [
+    { "path": ".." },
+    { "path": "../../runtime" },
+    { "path": "../../schema" },
+    { "path": "../../test-fixtures" }
+  ]
+}

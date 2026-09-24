@@ -13,5 +13,14 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@kadrion/renderer-dom": "workspace:*",
+    "@kadrion/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@kadrion/test-fixtures": "workspace:*",
+    "@types/jsdom": "28.0.3",
+    "jsdom": "29.1.1"
+  }
 }

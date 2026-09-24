@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true,
+    "types": ["node"],
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/tests-pinned.tsbuildinfo"
+  },
+  "include": ["./**/*.ts", "../parity/parity.ts", "../../vitest.pinned.config.ts"],
+  "references": [
+    {
+      "path": "../../packages/producer"
+    },
+    {
+      "path": "../../packages/renderer-dom"
+    },
+    {
+      "path": "../../packages/schema"
+    },
+    {
+      "path": "../../packages/test-fixtures"
+    }
+  ]
+}

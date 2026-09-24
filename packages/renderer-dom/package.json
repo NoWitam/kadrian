@@ -1,0 +1,29 @@
+{
+  "name": "@kadrion/renderer-dom",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DOM/SVG rendering of evaluated state and the Custom HTML mount.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./runtime-build/kadrion-runtime.js": "./dist/runtime-build/kadrion-runtime.js",
+    "./runtime-build/kadrion-runtime.json": "./dist/runtime-build/kadrion-runtime.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@kadrion/runtime": "workspace:*",
+    "@kadrion/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@kadrion/test-fixtures": "workspace:*",
+    "@types/jsdom": "28.0.3",
+    "esbuild": "0.28.2",
+    "jsdom": "29.1.1"
+  }
+}

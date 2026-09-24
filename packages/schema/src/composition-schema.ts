@@ -245,7 +245,20 @@ export const audioClipSchema = closedObject(
   },
 );
 
-export const compositionSchema = {
+/**
+ * Freezes a schema and everything reachable from it. `validate-structure.ts`
+ * remembers which schema objects it has checked; a frozen schema cannot change
+ * after that check, so the memo can never change a verdict (D24.2).
+ */
+function deepFreeze<T>(value: T): T {
+  if (typeof value === 'object' && value !== null) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
+}
+
+export const compositionSchema = deepFreeze({
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   title: 'Kadrion composition 0.1',
   ...closedObject('A video composition: the only source of rendering truth.', {
@@ -268,4 +281,4 @@ export const compositionSchema = {
       items: audioClipSchema,
     },
   }),
-} as const satisfies JsonSchema;
+} as const satisfies JsonSchema);

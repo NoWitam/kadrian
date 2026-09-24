@@ -2,8 +2,18 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"],
     "tsBuildInfoFile": "../node_modules/.cache/tsbuildinfo/tests.tsbuildinfo"
   },
-  "include": ["./**/*.ts", "../vitest.config.ts"]
+  "include": ["./**/*.ts", "../vitest.config.ts"],
+  "exclude": ["./pinned"],
+  "references": [
+    {
+      "path": "../apps/playground"
+    },
+    {
+      "path": "../packages/ai-sdk"
+    }
+  ]
 }

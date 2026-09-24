@@ -1,0 +1,7 @@
+{
+  "name": "set_node_position",
+  "arguments": {
+    "nodeId": "node-title",
+    "position": { "x": 190, "y": 360 }
+  }
+}

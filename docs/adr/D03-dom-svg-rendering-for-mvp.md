@@ -33,10 +33,14 @@ Listed under "Explicitly outside the current scope":
 
 ## See also
 
-- [Vertical-spike specification](../spike/vertical-spike.md), open question Q15:
-  `AGENTS.md` does not assign the DOM/SVG renderer to a package.
+- [Vertical-spike specification](../spike/vertical-spike.md), open question Q15,
+  answered by [D20](D20-dom-renderer-package-and-host-clock.md): the DOM/SVG
+  renderer lives in `@kadrion/renderer-dom`; its mapping is
+  [D22](D22-dom-mapping-and-css-serialisation.md).
 
 ## Verification
 
 Not mechanically verified in PR-00. From the renderer PR onwards: golden frames
-rendered through the DOM/SVG path at the reference timestamps.
+rendered through the DOM/SVG path at the reference timestamps. (Annotated by
+PR-03: the renderer PR verifies the rendered DOM tree; golden frames need the
+pinned Chromium of PR-06, specification §10.)

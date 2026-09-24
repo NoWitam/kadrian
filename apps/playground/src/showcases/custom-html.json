@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "0.1",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "durationUs": 8000000,
+  "assets": [
+    {
+      "id": "asset-font",
+      "type": "font",
+      "contentHash": "sha256:8b9741fd276dd775769286861ad4ff14d651a01aee1fb927cb5a784d3872a4a4"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-main",
+      "nodes": [
+        {
+          "id": "node-background",
+          "type": "background",
+          "color": "#0b1020"
+        },
+        {
+          "id": "node-title",
+          "type": "text",
+          "position": {
+            "x": 90,
+            "y": 140
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "opacity": 1,
+          "animations": [],
+          "text": "Kadrion",
+          "fontAssetId": "asset-font",
+          "fontSize": 144,
+          "color": "#ffffff"
+        },
+        {
+          "id": "node-dial",
+          "type": "custom-html",
+          "position": {
+            "x": 90,
+            "y": 520
+          },
+          "scale": {
+            "x": 1,
+            "y": 1
+          },
+          "opacity": 1,
+          "animations": [
+            {
+              "id": "anim-dial-opacity",
+              "property": "opacity",
+              "interpolation": "linear",
+              "keyframes": [
+                {
+                  "timeUs": 0,
+                  "value": 0.4
+                },
+                {
+                  "timeUs": 2000000,
+                  "value": 1
+                }
+              ]
+            }
+          ],
+          "width": 900,
+          "height": 900,
+          "html": "<!doctype html><meta charset='utf-8'><style>html,body{margin:0;height:100%;background:#0b1020;overflow:hidden}#face{position:absolute;left:50px;top:50px;width:800px;height:800px;border-radius:50%;border:24px solid #344054;box-sizing:border-box}#hand{position:absolute;left:442px;top:90px;width:16px;height:360px;background:#f79009;border-radius:8px;transform-origin:8px 360px}#hub{position:absolute;left:426px;top:426px;width:48px;height:48px;border-radius:50%;background:#f79009}#track{position:absolute;left:0;bottom:0;width:100%;height:24px;background:#1d2939}#fill{position:absolute;left:0;bottom:0;height:24px;width:0;background:#53b1fd}</style><div id='face'></div><div id='hand'></div><div id='hub'></div><div id='track'></div><div id='fill'></div><script>(function(){var meta=document.querySelector('meta[name=kadrion-instance]');var instanceId=meta?meta.getAttribute('content'):null;var KEYS='instanceId,requestId,timeUs,type,version';var DURATION_US=8000000;var hand=document.getElementById('hand');var fill=document.getElementById('fill');function count(n){return typeof n==='number'&&Number.isSafeInteger(n)&&n>=0}function draw(timeUs){hand.style.transform='rotate('+timeUs/1000000*45+'deg)';fill.style.width=timeUs/DURATION_US*100+'%'}addEventListener('message',function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!==KEYS)return;if(data.type!=='kadrion:time'||data.version!==1||instanceId===null||data.instanceId!==instanceId||!count(data.requestId)||!count(data.timeUs))return;draw(data.timeUs);window.parent.postMessage({type:'kadrion:time-ack',version:1,instanceId:instanceId,requestId:data.requestId,timeUs:data.timeUs},'*')})})()</script>"
+        }
+      ]
+    }
+  ],
+  "clips": []
+}

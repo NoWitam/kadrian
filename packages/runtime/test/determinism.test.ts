@@ -70,13 +70,14 @@ const threeKeyframes = derived((draft) => {
   ];
 });
 
-/** The rule of D18 spelled out for that one channel; the base opacity is 1. */
+/** The rule of D18 spelled out for that one channel, on the base opacity 0.75. */
 function expectedTitleOpacity(timeUs: number): number {
-  if (timeUs <= 0) return 0;
-  if (timeUs < MID) return 0 + ((1 - 0) * (timeUs - 0)) / (MID - 0);
-  if (timeUs === MID) return 1;
-  if (timeUs < END) return 1 + ((0.5 - 1) * (timeUs - MID)) / (END - MID);
-  return 0.5;
+  const base = 0.75;
+  if (timeUs <= 0) return base * 0;
+  if (timeUs < MID) return base * (0 + ((1 - 0) * (timeUs - 0)) / (MID - 0));
+  if (timeUs === MID) return base * 1;
+  if (timeUs < END) return base * (1 + ((0.5 - 1) * (timeUs - MID)) / (END - MID));
+  return base * 0.5;
 }
 
 const jumps = [MID + 1, MID - 1, MID, 0, MID + 1, END - 1, MID - 1, END, 9_999_999, 1, MID];

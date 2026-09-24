@@ -3,6 +3,8 @@
  * editor commands validate in-memory documents. None of it may pass, throw, or
  * reach `Object.prototype` (D17).
  */
+import { runInNewContext } from 'node:vm';
+
 import { referenceComposition } from '@kadrion/test-fixtures';
 import { describe, expect, it } from 'vitest';
 
@@ -138,5 +140,49 @@ describe('validateComposition result', () => {
   it('escapes JSON Pointer tokens', () => {
     const document = applyPatch(referenceComposition, [{ op: 'add', path: '/a~1b~0c', value: 1 }]);
     expect(errorsOf(document)).toEqual([{ code: 'unknown-field', path: '/a~1b~0c' }]);
+  });
+});
+
+// D24.3: the validator remembers schema objects, never documents. A document
+// changed in place after a successful validation is judged afresh.
+describe('no memory of documents (D24.3)', () => {
+  it('rejects a document that was valid and then changed in place', () => {
+    const document = applyPatch(referenceComposition, []) as Record<string, unknown>;
+    expect(validateComposition(document).ok).toBe(true);
+    document.fps = 0;
+    expect(errorsOf(document)).toEqual([expect.objectContaining({ path: '/fps' })]);
+    document.fps = 30;
+    expect(validateComposition(document).ok).toBe(true);
+  });
+});
+
+// D21: the validator accepts plain objects of its own realm only. A host hands a
+// document over as JSON or through `postMessage`, whose structured clone is
+// created by the receiving realm, so that limit is a contract, not a defect.
+describe('documents from another realm (D21)', () => {
+  const text = JSON.stringify(referenceComposition);
+  const foreign: unknown = runInNewContext(`JSON.parse(${JSON.stringify(text)})`);
+
+  it('premise: the foreign document is a plain object of another realm', () => {
+    expect(Object.getPrototypeOf(foreign)).not.toBe(Object.prototype);
+    expect(JSON.stringify(foreign)).toBe(text);
+  });
+
+  it('rejects an object passed by reference from another realm', () => {
+    const result = validateComposition(foreign);
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.errors).toEqual([
+      expect.objectContaining({
+        code: 'invalid-type',
+        path: '',
+        message: expect.stringContaining('a non-JSON object') as unknown,
+      }),
+    ]);
+  });
+
+  it('accepts its structured clone, which postMessage creates in the receiving realm', () => {
+    const received = structuredClone(foreign);
+    expect(Object.getPrototypeOf(received)).toBe(Object.prototype);
+    expect(validateComposition(received).ok).toBe(true);
   });
 });

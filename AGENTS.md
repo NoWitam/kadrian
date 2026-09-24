@@ -59,6 +59,7 @@ must change, stop and propose an ADR instead of silently bypassing it.
 
 - `@kadrion/schema`: JSON Schema, TypeScript types, validation, migrations.
 - `@kadrion/runtime`: deterministic state evaluation, layout, interpolation.
+- `@kadrion/renderer-dom`: DOM/SVG rendering of evaluated state and the Custom HTML mount.
 - `@kadrion/player`: browser host, iframe protocol, playback and seek.
 - `@kadrion/editor-sdk`: typed commands, patches, transactions, undo/redo.
 - `@kadrion/ai-sdk`: AI tool contracts built on editor-sdk commands.

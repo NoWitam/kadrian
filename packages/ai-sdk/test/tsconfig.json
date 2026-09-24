@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "tsBuildInfoFile": "../../../node_modules/.cache/tsbuildinfo/ai-sdk-test.tsbuildinfo"
+  },
+  "include": ["./**/*.ts"],
+  "references": [
+    { "path": ".." },
+    { "path": "../../editor-sdk" },
+    { "path": "../../schema" },
+    { "path": "../../test-fixtures" }
+  ]
+}

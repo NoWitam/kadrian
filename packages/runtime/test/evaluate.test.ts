@@ -1,8 +1,7 @@
 /**
  * Evaluation semantics (D16.6, D18) beyond the golden timestamps. The reference
- * composition has two keyframes per animation, identity bases for scale and
- * opacity, and a zero first offset, so several wrong runtimes would reproduce
- * its golden states. Each synthetic document below first proves that the wrong
+ * composition has two keyframes per animation and only five golden timestamps,
+ * so several wrong runtimes would still reproduce its golden states. Each synthetic document below first proves that the wrong
  * alternative really yields other bits, then pins the runtime to the rule.
  * Expected values are the rule written out as literal arithmetic.
  */
@@ -42,22 +41,22 @@ describe('evaluation off the frame grid', () => {
 
   it('follows the rule at 1 250 000', () => {
     const state = evaluateComposition(reference, 1_250_000);
-    // offset = ((60, 300) * 1 250 000) / 7 500 000 = (10, 50), all exact integers
-    expect(stateNode(state, 'node-group').position).toStrictEqual({ x: 70, y: 470 });
-    // before the first scale keyframe at 2 500 000: the first factor holds
-    expect(stateNode(state, 'node-image').scale).toStrictEqual({ x: 1, y: 1 });
-    // 0.25 + (0.75 * 1 250 000) / 7 500 000 = 0.25 + 0.125, dyadic and exact
-    expect(stateNode(state, 'node-title').opacity).toBe(0.375);
+    // offset = (16, 8) + ((60, 300) * 1 250 000) / 7 500 000 = (16 + 10, 8 + 50), all exact integers
+    expect(stateNode(state, 'node-group').position).toStrictEqual({ x: 60 + 26, y: 420 + 58 });
+    // before the first scale keyframe at 2 500 000: the first factor holds on the base 1.25
+    expect(stateNode(state, 'node-image').scale).toStrictEqual({ x: 1.25, y: 1.25 });
+    // 0.75 * (0.25 + (0.75 * 1 250 000) / 7 500 000) = 0.75 * 0.375, dyadic and exact
+    expect(stateNode(state, 'node-title').opacity).toBe(0.281_25);
   });
 
   it('follows the rule at 6 250 000', () => {
     const state = evaluateComposition(reference, 6_250_000);
-    // offset = ((60, 300) * 6 250 000) / 7 500 000 = (50, 250)
-    expect(stateNode(state, 'node-group').position).toStrictEqual({ x: 110, y: 670 });
-    // elapsed 3 750 000 of 7 500 000: 1 + 0.75 / 2 and 1 + 0.375 / 2
-    expect(stateNode(state, 'node-image').scale).toStrictEqual({ x: 1.375, y: 1.1875 });
-    // 0.25 + (0.75 * 6 250 000) / 7 500 000 = 0.25 + 0.625
-    expect(stateNode(state, 'node-title').opacity).toBe(0.875);
+    // offset = (16, 8) + ((60, 300) * 6 250 000) / 7 500 000 = (16 + 50, 8 + 250)
+    expect(stateNode(state, 'node-group').position).toStrictEqual({ x: 60 + 66, y: 420 + 258 });
+    // elapsed 3 750 000 of 7 500 000: 1.25 * (1 + 0.75 / 2) and 1.25 * (1 + 0.375 / 2)
+    expect(stateNode(state, 'node-image').scale).toStrictEqual({ x: 1.718_75, y: 1.484_375 });
+    // 0.75 * (0.25 + (0.75 * 6 250 000) / 7 500 000) = 0.75 * 0.875
+    expect(stateNode(state, 'node-title').opacity).toBe(0.656_25);
   });
 
   it('does not snap to the frame grid: every microsecond inside frame 1 has its own state', () => {
@@ -66,7 +65,7 @@ describe('evaluation off the frame grid', () => {
     const xs = times.map(
       (timeUs) => stateNode(evaluateComposition(reference, timeUs), 'node-group').position.x,
     );
-    expect(xs).toStrictEqual(times.map((timeUs) => 60 + (60 * timeUs) / 7_500_000));
+    expect(xs).toStrictEqual(times.map((timeUs) => 60 + (16 + (60 * timeUs) / 7_500_000)));
     expect([...xs].sort((a, b) => a - b)).toStrictEqual(xs);
     expect(new Set(xs).size).toBe(times.length);
   });
@@ -116,11 +115,11 @@ describe('time domain', () => {
   it('never samples a keyframe at durationUs, because the end is exclusive (D16.5)', () => {
     const { scale } = stateNode(evaluateComposition(reference, durationUs - 1), 'node-image');
     expect(scale).toStrictEqual({
-      x: 1 * (1 + ((1.75 - 1) * 7_499_999) / 7_500_000),
-      y: 1 * (1 + ((1.375 - 1) * 7_499_999) / 7_500_000),
+      x: 1.25 * (1 + ((1.75 - 1) * 7_499_999) / 7_500_000),
+      y: 1.25 * (1 + ((1.375 - 1) * 7_499_999) / 7_500_000),
     });
-    expect(scale.x).toBeLessThan(1.75);
-    expect(scale.y).toBeLessThan(1.375);
+    expect(scale.x).toBeLessThan(1.25 * 1.75);
+    expect(scale.y).toBeLessThan(1.25 * 1.375);
   });
 });
 
@@ -211,19 +210,21 @@ describe('the arithmetic rule (D18)', () => {
   it('is pinned on the frame grid of the reference composition, at frame 61', () => {
     const timeUs = frameToTimeUs(61, fps);
     expect(timeUs).toBe(2_033_333);
-    // Exact arithmetic: the offset is 121 999 980 / 7 500 000 = 16.266664, which
-    // rounds to 4 578 658 870 560 066 * 2^-48. Adding 60 gives
-    // 21 467 157 473 199 426 * 2^-48, an exact tie between two doubles of the
-    // binade [64, 128); ties go to even: 5 366 789 368 299 856 * 2^-46.
-    const expected = 76.266_663_999_999_99;
-    expect(60 + progressFirst(0, 60, timeUs, 7_500_000)).not.toBe(expected);
-    expect(60 + symmetric(0, 60, timeUs, 7_500_000)).not.toBe(expected);
+    // Exact arithmetic: the quotient is 121 999 980 / 7 500 000 = 16.266664, which
+    // rounds to 4 578 658 870 560 066 * 2^-48. Adding the first offset 16 gives
+    // 9 082 258 497 930 562 * 2^-48 = 4 541 129 248 965 281 * 2^-47, exact in the
+    // binade [32, 64). Adding the base 60 gives 12 985 378 550 284 961 * 2^-47, an
+    // exact tie between two doubles of the binade [64, 128); ties go to even:
+    // 6 492 689 275 142 480 * 2^-46, one unit in the last place below RN(92.266664).
+    const expected = 92.266_663_999_999_99;
+    expect(60 + progressFirst(16, 76, timeUs, 7_500_000)).not.toBe(expected);
+    expect(60 + progressFirst(16, 76, timeUs, 7_500_000)).toBe(92.266_664);
     expect(stateNode(evaluateComposition(reference, timeUs), 'node-group').position.x).toBe(
       expected,
     );
   });
 
-  it('is not pinned by the golden timestamps, but by 69 frames of the grid (D18, evidence 1 and 2)', () => {
+  it('is not pinned by the golden timestamps, but by 61 frames of the grid (D18, evidence 1 and 2)', () => {
     const multiplyFirst: Order = (a, b, elapsed, span) => a + ((b - a) * elapsed) / span;
     const differing = (times: readonly number[], order: Order): number[] =>
       times.filter(
@@ -245,8 +246,8 @@ describe('the arithmetic rule (D18)', () => {
 
     expect(differing(goldenTimes, progressFirst)).toEqual([]);
     expect(differing(goldenTimes, symmetric)).toEqual([9_900_000]);
-    expect(finalValues(9_900_000, symmetric)).toContain(1.740_000_000_000_000_2);
-    expect(differing(gridTimes, progressFirst)).toHaveLength(69);
+    expect(finalValues(9_900_000, symmetric)).toContain(2.175_000_000_000_000_3);
+    expect(differing(gridTimes, progressFirst)).toHaveLength(61);
     // Every channel is pinned on its own: position x and y, scale x and y, opacity.
     const perChannel = channels.map(
       (_, index) =>
@@ -258,7 +259,7 @@ describe('the arithmetic rule (D18)', () => {
             ),
         ).length,
     );
-    expect(perChannel).toEqual([16, 10, 19, 7, 35]);
+    expect(perChannel).toEqual([16, 7, 15, 7, 29]);
   });
 
   it('meets the base value after the interpolation, not inside its endpoints', () => {
@@ -323,11 +324,19 @@ describe('sampling (D16.6, D18)', () => {
         animation('anim-title-opacity', 'opacity', [1_000_000, 0.5], [2_000_000, 0.25]),
       ];
     });
-    const held = { position: { x: 90 + 7, y: 160 - 5 }, scale: { x: 2, y: 3 }, opacity: 0.5 };
+    const held = {
+      position: { x: 90 + 7, y: 160 - 5 },
+      scale: { x: 2, y: 3 },
+      opacity: 0.75 * 0.5,
+    };
     for (const timeUs of [0, 999_999, 1_000_000]) {
       expect(stateNode(evaluateComposition(document, timeUs), 'node-title')).toMatchObject(held);
     }
-    const last = { position: { x: 90 + 13, y: 160 + 5 }, scale: { x: 4, y: 5 }, opacity: 0.25 };
+    const last = {
+      position: { x: 90 + 13, y: 160 + 5 },
+      scale: { x: 4, y: 5 },
+      opacity: 0.75 * 0.25,
+    };
     for (const timeUs of [2_000_000, 2_000_001, durationUs - 1]) {
       expect(stateNode(evaluateComposition(document, timeUs), 'node-title')).toMatchObject(last);
     }
@@ -339,9 +348,9 @@ describe('sampling (D16.6, D18)', () => {
     expect(0.1 + ((0 - 0.1) * 3) / 3).toBeLessThan(0);
 
     const document = derived((draft) => {
-      draftNode(draft, 'node-title').animations = [
-        animation('anim-title-opacity', 'opacity', [0, 0], [3, 0.1], [6, 0]),
-      ];
+      const title = draftNode(draft, 'node-title');
+      title.opacity = 1; // the sampled factor itself, without a second rounding
+      title.animations = [animation('anim-title-opacity', 'opacity', [0, 0], [3, 0.1], [6, 0])];
     });
     const opacityAt = (timeUs: number): number =>
       stateNode(evaluateComposition(document, timeUs), 'node-title').opacity;
@@ -384,7 +393,7 @@ describe('sampling (D16.6, D18)', () => {
       type: 'text',
       position: { x: 90 + 2, y: 160 + 3.5 },
       scale: { x: 1 * 1.5, y: 1 * 1.5 },
-      opacity: 1 * 0.5,
+      opacity: 0.75 * 0.5,
     });
     for (const state of states) expect(state).toStrictEqual(states[0]);
   });
@@ -403,7 +412,7 @@ describe('sampling (D16.6, D18)', () => {
     const state = evaluateComposition(document, 5_000_000);
     const plain = evaluateComposition(reference, 5_000_000);
     expect(stateNode(state, 'node-group')).toMatchObject({
-      position: { x: 100, y: 620 },
+      position: { x: 116, y: 628 },
       scale: {
         x: 3 * (2 + ((4 - 2) * 5_000_000) / 7_500_000),
         y: 0.5 * (2 + ((4 - 2) * 5_000_000) / 7_500_000),
@@ -477,7 +486,10 @@ describe('sampling (D16.6, D18)', () => {
       });
     });
     const state = evaluateComposition(document, 1);
-    expect(ids.map((id) => stateNode(state, id).opacity)).toStrictEqual(ids.map(() => 0.25));
+    // Every base opacity is 1, except the title's 0.75.
+    expect(ids.map((id) => stateNode(state, id).opacity)).toStrictEqual(
+      ids.map((id) => (id === 'node-title' ? 0.75 : 1) * 0.25),
+    );
   });
 });
 

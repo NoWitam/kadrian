@@ -50,6 +50,46 @@ const all = subschemas(schemaJson);
 const locationsWhere = (predicate: (located: Located) => boolean): string[] =>
   all.filter(predicate).map(({ location }) => location);
 
+/** Every object and array reachable from a value, the value itself included. */
+function everyObject(value: unknown): object[] {
+  if (typeof value !== 'object' || value === null) return [];
+  return [value, ...Object.values(value).flatMap((child) => everyObject(child))];
+}
+
+// D24.2: `validate-structure.ts` remembers the schema objects it has checked,
+// which is harmless only if none of them can change afterwards.
+describe('the memo of checked schema objects (D24)', () => {
+  it('sees only frozen schema objects: every object of compositionSchema is frozen', () => {
+    const objects = everyObject(compositionSchema);
+    expect(objects.length).toBeGreaterThan(100);
+    expect(objects.filter((object) => !Object.isFrozen(object))).toEqual([]);
+  });
+
+  it('cannot be tricked by a change after the first check', () => {
+    assertSupportedSchema(compositionSchema);
+    const width = compositionSchema.properties.width as unknown as Record<string, unknown>;
+    expect(() => {
+      width.format = 'uuid';
+    }).toThrow(TypeError);
+    expect(width).not.toHaveProperty('format');
+  });
+
+  it('gives the same verdict for a schema object the second time', () => {
+    const schema = { type: 'string', minLength: 1 } as unknown as JsonSchema;
+    for (let round = 0; round < 2; round += 1) {
+      expect(() => {
+        assertSupportedSchema(schema);
+      }).toThrow('Unsupported JSON Schema at #: string, minLength');
+    }
+    const accepted = Object.freeze({ type: 'string' }) as JsonSchema;
+    for (let round = 0; round < 2; round += 1) {
+      expect(() => {
+        assertSupportedSchema(accepted);
+      }).not.toThrow();
+    }
+  });
+});
+
 describe('schema conventions', () => {
   it('stays within the keyword subset that the validator interprets', () => {
     expect(() => {

@@ -13,5 +13,14 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "bin": {
+    "kadrion": "./dist/bin.js"
+  },
+  "dependencies": {
+    "@kadrion/producer": "workspace:*"
+  },
+  "devDependencies": {
+    "@kadrion/test-fixtures": "workspace:*"
+  }
 }

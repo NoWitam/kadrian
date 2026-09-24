@@ -1,5 +1,6 @@
 packages:
   - packages/*
+  - apps/*
 
 # Supply-chain cooling-off: never resolve a dependency version that was
 # published less than 24 hours ago (value in minutes).
@@ -10,3 +11,9 @@ saveExact: true
 
 # Fail installation on an unsupported Node.js version (see "engines").
 engineStrict: true
+
+# Dependency install scripts do not run unless listed here as allowed. esbuild
+# (D21) works without its postinstall step, which only verifies and relinks the
+# platform binary that pnpm already installs as an optional dependency.
+allowBuilds:
+  esbuild: false

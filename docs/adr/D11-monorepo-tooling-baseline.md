@@ -1,7 +1,6 @@
 # D11 — Monorepo tooling baseline
 
-- Status: Proposed — provisionally implemented by PR-00; becomes Accepted only by
-  explicit approval of the project owner
+- Status: Accepted — by the project owner on 2026-09-22
 - Date: 2026-09-21
 - Related: D10, D12
 

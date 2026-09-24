@@ -1,0 +1,19 @@
+{
+  "name": "kadrion-playground",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local page with showcases, documents of the user's own, the drag of P3, and the AI tool of P4 (D25.9, D32). Not a package.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "serve": "node --experimental-strip-types scripts/serve.ts"
+  },
+  "dependencies": {
+    "@kadrion/ai-sdk": "workspace:*",
+    "@kadrion/editor-sdk": "workspace:*",
+    "@kadrion/player": "workspace:*",
+    "@kadrion/renderer-dom": "workspace:*",
+    "@kadrion/schema": "workspace:*",
+    "@kadrion/test-fixtures": "workspace:*"
+  }
+}

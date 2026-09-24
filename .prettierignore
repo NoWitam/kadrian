@@ -7,4 +7,6 @@ CLAUDE.md
 # Generated
 pnpm-lock.yaml
 dist/
+# Golden frames and their manifest are written by node --run goldens:update (D26.5).
+packages/test-fixtures/src/golden-frames/
 coverage/

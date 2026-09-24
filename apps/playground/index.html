@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kadrion playground</title>
+    <style>
+      body {
+        margin: 16px;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        color: #101828;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      h2 {
+        font-size: 14px;
+        margin: 16px 0 6px;
+      }
+      #layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      #left {
+        width: 260px;
+      }
+      #right {
+        flex: 1;
+        min-width: 360px;
+        max-width: 760px;
+      }
+      #showcases button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        margin: 0 0 6px;
+        padding: 6px 8px;
+        border: 1px solid #d0d5dd;
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+      }
+      #showcases button[aria-pressed='true'] {
+        border-color: #f79009;
+        background: #fffaeb;
+      }
+      .tags {
+        color: #667085;
+        font-size: 12px;
+      }
+      .note {
+        color: #667085;
+        font-size: 12px;
+      }
+      #controls button,
+      #json-actions button,
+      #ai button {
+        margin: 0 4px 8px 0;
+      }
+      #timeline {
+        width: 100%;
+      }
+      #status,
+      #errors,
+      #tool-result,
+      #assets {
+        white-space: pre-wrap;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      #errors {
+        color: #b42318;
+      }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      #current {
+        max-height: 320px;
+        overflow: auto;
+        background: #f9fafb;
+        border: 1px solid #eaecf0;
+        font-size: 12px;
+      }
+      /* Fitting the canvas on screen is the application's business (D25.2); the
+         page sizes the viewport to the document at this scale (D32.3). */
+      #viewport {
+        position: relative;
+        width: 378px;
+        height: 672px;
+        overflow: hidden;
+        outline: 1px solid #98a2b3;
+      }
+      /* The stage and the overlay are the same canvas box under the same scale,
+         so the measured preview scale is the real one (D30.10). */
+      #stage,
+      #overlay {
+        transform: scale(0.35);
+        transform-origin: 0 0;
+      }
+      /* The drag affordance the application owns; it never reaches the renderer's DOM. */
+      #overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #grip {
+        position: absolute;
+        box-sizing: border-box;
+        border: 6px dashed #f79009;
+        border-radius: 12px;
+        cursor: grab;
+        pointer-events: auto;
+        touch-action: none;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "@kadrion/ai-sdk": "/pkg/ai-sdk/index.js",
+          "@kadrion/editor-sdk": "/pkg/editor-sdk/index.js",
+          "@kadrion/player": "/pkg/player/index.js",
+          "@kadrion/renderer-dom": "/pkg/renderer-dom/index.js",
+          "@kadrion/runtime": "/pkg/runtime/index.js",
+          "@kadrion/schema": "/pkg/schema/index.js",
+          "@kadrion/test-fixtures": "/pkg/test-fixtures/index.js"
+        }
+      }
+    </script>
+    <script type="module" src="/app/main.js"></script>
+  </head>
+  <body>
+    <h1>Kadrion playground</h1>
+    <div id="layout">
+      <section id="left">
+        <h2>Showcases</h2>
+        <div id="showcases"></div>
+        <div id="about"></div>
+      </section>
+      <section id="middle">
+        <div id="controls"></div>
+        <input id="timeline" type="range" min="0" max="0" value="0" step="1" />
+        <div>
+          <label
+            >Drag node
+            <select id="drag-node"></select>
+          </label>
+        </div>
+        <div id="status">starting</div>
+        <div id="errors"></div>
+        <div id="viewport">
+          <div id="stage"></div>
+          <div id="overlay"><div id="grip" title="Drag the node"></div></div>
+        </div>
+      </section>
+      <section id="right">
+        <h2>Source JSON</h2>
+        <div id="source-info" class="note"></div>
+        <textarea id="source" rows="22" spellcheck="false"></textarea>
+        <div id="json-actions">
+          <button id="load-json" type="button">Load this JSON</button>
+          <label
+            >Load a file <input id="load-file" type="file" accept=".json,application/json"
+          /></label>
+          <button id="show-current" type="button">Show current document</button>
+        </div>
+        <div class="note">
+          Loading replaces the document and starts a new undo history. Custom HTML of a loaded
+          document runs inside the allow-scripts-only sandbox.
+        </div>
+        <pre id="current" hidden></pre>
+        <h2>AI tool call (set_node_position)</h2>
+        <div id="ai">
+          <textarea id="tool-call" rows="7" spellcheck="false"></textarea>
+          <button id="run-tool" type="button">Run tool call</button>
+          <div class="note">
+            Runs on the same command bus as the drag, so Undo and Redo cover it (D31, D32.5).
+          </div>
+          <div id="tool-result"></div>
+        </div>
+        <h2>Assets a document can use</h2>
+        <div id="assets"></div>
+      </section>
+    </div>
+  </body>
+</html>
