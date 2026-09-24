@@ -32,6 +32,7 @@ import {
 } from './encode.js';
 import {
   CHROMIUM_REVISION,
+  hostNetworkInterfaces,
   launchChromium,
   PLAYWRIGHT_CORE_VERSION,
   type LaunchedChromium,
@@ -102,6 +103,8 @@ export interface ExportDependencies {
   readonly browser: (request: ExportRequest) => Promise<ExportBrowser>;
   readonly removeFile: (path: string) => Promise<void>;
   readonly startTimer: StartTimer;
+  /** The host's interface names for the manifest (D28.9); `exportMp4` reads the host. */
+  readonly networkInterfaces: () => readonly string[];
 }
 
 function encodeFailed(message: string): ProducerError {
@@ -267,7 +270,7 @@ export async function exportWith(
       );
     }
     const { identity } = tools;
-    const base = manifestBase(prepared, browser.chromium);
+    const base = manifestBase(prepared, browser.chromium, dependencies.networkInterfaces());
     const image = base.environment.pinned ? base.environment.image : null;
     const manifest: ExportManifest = {
       ...base,
@@ -357,5 +360,6 @@ export function exportMp4(request: ExportRequest): Promise<ExportResult> {
     },
     removeFile: (path) => rm(path, { force: true }),
     startTimer: realTimer,
+    networkInterfaces: () => hostNetworkInterfaces(),
   });
 }

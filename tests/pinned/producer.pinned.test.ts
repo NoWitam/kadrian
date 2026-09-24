@@ -7,12 +7,14 @@
  * else this file proves nothing about P2 and says so.
  */
 import { rmSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 
 import {
   awaitPresented,
   captureFrame,
   launchChromium,
+  networkFacts,
   openRenderSession,
   PINNED_IMAGE,
   PINNED_IMAGE_VARIABLE,
@@ -77,6 +79,12 @@ afterAll(async () => {
 });
 
 describe('the pinned Chromium (D26.3)', () => {
+  it('records the network interfaces this host reports, not assumed ones (D28.9)', () => {
+    expect(baseline.manifest.environment.network).toEqual(
+      networkFacts(Object.keys(networkInterfaces())),
+    );
+  });
+
   it('reports the expected build', () => {
     expect(chromium.reportedVersion).toBe('153.0.8010.12');
     expect(baseline.manifest.chromium).toMatchObject({

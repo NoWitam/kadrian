@@ -9,7 +9,7 @@
  */
 import { execFile } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { networkInterfaces, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
@@ -17,6 +17,7 @@ import { promisify } from 'node:util';
 import {
   exportMp4,
   launchChromium,
+  networkFacts,
   PINNED_IMAGE,
   PINNED_IMAGE_VARIABLE,
   renderFrames,
@@ -251,6 +252,12 @@ describe.skipIf(!available)('the MP4 export with the pinned FFmpeg (D29, P5)', (
   afterAll(async () => {
     await chromium.browser.close();
     writeReport('export-report.json', report);
+  });
+
+  it('records the network interfaces this host reports, not assumed ones (D28.9)', () => {
+    expect(full.manifest.environment.network).toEqual(
+      networkFacts(Object.keys(networkInterfaces())),
+    );
   });
 
   it('writes no file but the MP4 while exporting (§5 P5)', () => {

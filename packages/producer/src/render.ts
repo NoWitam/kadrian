@@ -42,6 +42,7 @@ import {
   PLAYWRIGHT_CORE_VERSION,
   contextOptions,
   environmentManifest,
+  hostNetworkInterfaces,
   launchChromium,
   type LaunchedChromium,
 } from './environment.js';
@@ -458,10 +459,15 @@ export function chromiumSequence(
   };
 }
 
-/** The part of the render manifest that describes the run, not its output (D28.7). */
+/**
+ * The part of the render manifest that describes the run, not its output
+ * (D28.7). `networkInterfaces` are the host's (`hostNetworkInterfaces`) in a
+ * render or an export, and a fixed list in their unit tests (D28.9).
+ */
 export function manifestBase(
   prepared: PreparedRender,
   chromium: LaunchedChromium,
+  networkInterfaces: readonly string[],
 ): Omit<RenderManifest, 'preset' | 'frames' | 'blockedRequests' | 'ffmpeg'> {
   const { composition, assets, runtime } = prepared;
   return {
@@ -481,7 +487,7 @@ export function manifestBase(
       channel: CHROMIUM_CHANNEL,
       args: CHROMIUM_ARGS,
     },
-    environment: environmentManifest(chromium.reportedVersion, composition),
+    environment: environmentManifest(chromium.reportedVersion, composition, { networkInterfaces }),
     assets: assets.map(({ id, type, mediaType, contentHash }) => ({
       id,
       type,
@@ -523,7 +529,7 @@ export async function renderFrames(request: RenderRequest): Promise<RenderResult
       },
     );
     const manifest: RenderManifest = {
-      ...manifestBase(prepared, chromium),
+      ...manifestBase(prepared, chromium, hostNetworkInterfaces()),
       preset: {
         name: 'frames-png',
         width: composition.width,

@@ -5,7 +5,6 @@
  * sandboxed frame, runs the verified runtime build in it, and offers `load`,
  * `seek`, `play`, and `pause` (D25). The Player decides no pixel and loads
  * nothing but the runtime build and the asset bytes the application passes.
- * D25 is Proposed and may change until the project owner accepts it.
  */
 export { PlayerError } from './errors.js';
 export type { PlayerErrorCode } from './errors.js';

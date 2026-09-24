@@ -6,8 +6,7 @@
  * the presentation barrier, and the capture are exported as well, because the
  * Player's browser test measures through exactly the same functions (D28.5).
  * `exportMp4` streams every frame of the grid into the pinned FFmpeg and writes an
- * H.264 MP4 with the audio clip muxed (D29). D26–D28 are accepted; D29 is
- * Proposed and may change until the project owner accepts it.
+ * H.264 MP4 with the audio clip muxed (D29).
  */
 export { PRODUCER_AGENT_SCRIPT } from './agent.js';
 export { awaitPresented, captureFrame, presentationSessions } from './capture.js';

@@ -574,6 +574,8 @@ interface FakeOptions {
   readonly failAt?: { readonly index: number; readonly code: string };
   readonly toolsFail?: string;
   readonly onFrame?: (index: number) => void;
+  /** The interface names the run reports; never the host's (D28.9). */
+  readonly networkInterfaces?: readonly string[];
 }
 
 function fakeRun(options: FakeOptions = {}): FakeRun {
@@ -690,6 +692,7 @@ function fakeRun(options: FakeOptions = {}): FakeRun {
       return Promise.resolve();
     },
     startTimer: run.timer.start,
+    networkInterfaces: () => options.networkInterfaces ?? ['lo'],
   };
   return run;
 }
@@ -755,6 +758,22 @@ describe('the export on a fake frame loop and encoder (D29.3)', () => {
       channelLayout: 'stereo',
       codec: 'aac',
       bitrate: '128k',
+    });
+  });
+
+  it('records the network the run reports, never one it assumed (D28.9)', async () => {
+    const isolated = await exportWith(request(), fakeRun().dependencies);
+    expect(isolated.manifest.environment.network).toEqual({
+      interfaces: ['lo'],
+      loopbackOnly: true,
+    });
+    const networked = await exportWith(
+      request(),
+      fakeRun({ networkInterfaces: ['lo', 'kadrion-test0'] }).dependencies,
+    );
+    expect(networked.manifest.environment.network).toEqual({
+      interfaces: ['kadrion-test0', 'lo'],
+      loopbackOnly: false,
     });
   });
 

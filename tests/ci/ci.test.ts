@@ -14,6 +14,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,6 +34,13 @@ import {
   type CiIdentityIo,
   type IdentityEnv,
 } from './ci-identity.js';
+import {
+  ciDiagnostic,
+  DIAGNOSTIC_CODES,
+  writeCiDiagnostic,
+  type CiDiagnostic,
+} from './diagnostic.js';
+import { FFMPEG_INSTALL_ERROR_CODES } from './ffmpeg-install.js';
 import {
   PinnedSummaryError,
   pinnedSummaryProblems,
@@ -661,10 +669,37 @@ describe('the CI identity', () => {
 // --- the generators, as the workflow runs them --------------------------------
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+const SECRET = 'kadrion-test-secret';
+
+/**
+ * The environment of a run outside GitHub Actions: none of the variables of a
+ * CI run, even when `check` itself runs in CI, where `GITHUB_ACTIONS` is set.
+ */
+function localEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!/^(GITHUB|RUNNER|KADRION)_/.test(name)) env[name] = value;
+  }
+  return { ...env, ...extra };
+}
+
+/** The environment of a GitHub Actions run, with secrets that must never be written. */
+function actionsEnv(): NodeJS.ProcessEnv {
+  return localEnv({
+    GITHUB_ACTIONS: 'true',
+    GITHUB_SHA: HEAD,
+    GITHUB_RUN_ID: '42',
+    GITHUB_RUN_ATTEMPT: '1',
+    GITHUB_WORKFLOW_REF: 'NoWitam/kadrian/.github/workflows/ci.yml@refs/heads/main',
+    GITHUB_WORKFLOW_SHA: HEAD,
+    GITHUB_TOKEN: `${SECRET}-token`,
+    ACTIONS_RUNTIME_TOKEN: `${SECRET}-runtime`,
+  });
+}
 
 function runScript(
   script: string,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv,
 ): { code: number | null; output: string } {
   const result = spawnSync(process.execPath, ['--experimental-strip-types', script], {
     encoding: 'utf8',
@@ -673,13 +708,120 @@ function runScript(
   return { code: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
+function readJsonFile(path: string): unknown {
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+/**
+ * A temporary checkout with a copy of write-ci-identity.ts and the modules it
+ * imports, and the repository's node_modules linked in: the script writes
+ * relative to its own checkout, so the real .kadrion-out is never touched, not
+ * even when the test is killed (in CI, a stray diagnostic there would spoil
+ * the artifact of a good run).
+ */
+function identityCheckout(): { root: string; script: string; out: string } {
+  const root = mkdtempSync(join(tmpdir(), 'kadrion-identity-'));
+  for (const [directory, files] of [
+    ['ci', ['write-ci-identity.ts', 'ci-identity.ts', 'diagnostic.ts']],
+    ['parity', ['parity.ts']],
+  ] as const) {
+    mkdirSync(join(root, 'tests', directory), { recursive: true });
+    for (const file of files) {
+      copyFileSync(
+        join(REPOSITORY_ROOT, 'tests', directory, file),
+        join(root, 'tests', directory, file),
+      );
+    }
+  }
+  writeFileSync(join(root, 'package.json'), '{ "type": "module" }\n');
+  symlinkSync(join(REPOSITORY_ROOT, 'node_modules'), join(root, 'node_modules'), 'junction');
+  return {
+    root,
+    script: join(root, 'tests', 'ci', 'write-ci-identity.ts'),
+    out: join(root, '.kadrion-out'),
+  };
+}
+
+describe('the CI diagnostics', () => {
+  const env = actionsEnv();
+
+  it('carry the stage, a fixed code, and the identity of the run, and nothing else', () => {
+    const diagnostic = ciDiagnostic('pinned-ffmpeg', 'no-decompressor', env);
+    expect(diagnostic).toEqual({
+      diagnosticVersion: 1,
+      kind: 'kadrion-ci-diagnostic',
+      evidence: false,
+      stage: 'pinned-ffmpeg',
+      errorType: 'no-decompressor',
+      commitSha: HEAD,
+      runId: 42,
+      runAttempt: 1,
+      workflowRef: 'NoWitam/kadrian/.github/workflows/ci.yml@refs/heads/main',
+      workflowSha: HEAD,
+    });
+    expect(JSON.stringify(diagnostic)).not.toContain(SECRET);
+  });
+
+  it('name exactly the codes of the FFmpeg installation, and refuse any other code', () => {
+    expect([...DIAGNOSTIC_CODES['pinned-ffmpeg']]).toEqual([
+      ...FFMPEG_INSTALL_ERROR_CODES,
+      'unexpected',
+    ]);
+    expect(() => ciDiagnostic('ci-identity', 'GITHUB_TOKEN=x', env)).toThrow(
+      'is not a diagnostic code of ci-identity',
+    );
+    expect(() => ciDiagnostic('pinned-test-summary', 'no-decompressor', env)).toThrow();
+  });
+
+  it.each<[string, Record<string, string>, Partial<CiDiagnostic>]>([
+    ['a short commit', { GITHUB_SHA: HEAD.slice(1) }, { commitSha: null }],
+    ['an upper-case commit', { GITHUB_SHA: HEAD.toUpperCase() }, { commitSha: null }],
+    ['a run id that is not a number', { GITHUB_RUN_ID: 'abc' }, { runId: null }],
+    ['a run id of zero', { GITHUB_RUN_ID: '0' }, { runId: null }],
+    ['a negative attempt', { GITHUB_RUN_ATTEMPT: '-1' }, { runAttempt: null }],
+    ['an attempt in exponent form', { GITHUB_RUN_ATTEMPT: '1e3' }, { runAttempt: null }],
+    [
+      'a workflow ref with a space',
+      { GITHUB_WORKFLOW_REF: 'a b/.github/workflows/ci.yml@refs/heads/main' },
+      { workflowRef: null },
+    ],
+    [
+      'a workflow ref of no workflow file',
+      { GITHUB_WORKFLOW_REF: 'NoWitam/kadrian@refs/heads/main' },
+      { workflowRef: null },
+    ],
+    ['a workflow commit that is not one', { GITHUB_WORKFLOW_SHA: 'main' }, { workflowSha: null }],
+  ])('keep nothing of %s', (_, change, expected) => {
+    expect(
+      ciDiagnostic('ci-identity', 'identity-check-failed', { ...env, ...change }),
+    ).toMatchObject(expected);
+  });
+
+  it('are written in GitHub Actions only, under .kadrion-out/diagnostics', () => {
+    const root = mkdtempSync(join(tmpdir(), 'kadrion-diagnostic-'));
+    try {
+      expect(
+        writeCiDiagnostic(root, 'ci-identity', 'identity-check-failed', localEnv()),
+      ).toBeNull();
+      expect(readdirSync(root)).toEqual([]);
+      const path = writeCiDiagnostic(root, 'ci-identity', 'identity-check-failed', env);
+      expect(path).toBe(join(root, '.kadrion-out', 'diagnostics', 'ci-identity.json'));
+      expect(readJsonFile(join(root, '.kadrion-out', 'diagnostics', 'ci-identity.json'))).toEqual(
+        ciDiagnostic('ci-identity', 'identity-check-failed', env),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('the generators', () => {
   // write-pinned-summary.ts reads and writes relative to its own checkout: run a
   // copy of it in a temporary one, so the real .kadrion-out is never touched.
   function checkout(): { root: string; script: string; out: string } {
     const root = mkdtempSync(join(tmpdir(), 'kadrion-summary-'));
     mkdirSync(join(root, 'tests', 'ci'), { recursive: true });
-    for (const file of ['write-pinned-summary.ts', 'pinned-summary.ts']) {
+    for (const file of ['write-pinned-summary.ts', 'pinned-summary.ts', 'diagnostic.ts']) {
       copyFileSync(new URL(file, import.meta.url), join(root, 'tests', 'ci', file));
     }
     writeFileSync(join(root, 'package.json'), '{ "type": "module" }\n');
@@ -702,7 +844,7 @@ describe('the generators', () => {
   it('fails and writes nothing when Vitest wrote no raw report: an evidence error', () => {
     const { root, script, out } = checkout();
     try {
-      const { code, output } = runScript(script);
+      const { code, output } = runScript(script, localEnv());
       expect(code).toBe(1);
       expect(output).toContain('There is no .kadrion-out/vitest-pinned.json');
       expect(readdirSync(out)).toEqual([]);
@@ -711,18 +853,34 @@ describe('the generators', () => {
     }
   }, 60_000);
 
-  it('writes the summary of a green report and succeeds', () => {
+  it('in GitHub Actions, leaves only a diagnostic when there is no raw report, never a summary', () => {
+    const { root, script, out } = checkout();
+    try {
+      const env = actionsEnv();
+      const { code, output } = runScript(script, env);
+      expect(code).toBe(1);
+      expect(output).not.toContain(SECRET);
+      expect(readdirSync(out)).toEqual(['diagnostics']);
+      expect(readdirSync(join(out, 'diagnostics'))).toEqual(['pinned-test-summary.json']);
+      expect(readJsonFile(join(out, 'diagnostics', 'pinned-test-summary.json'))).toEqual(
+        ciDiagnostic('pinned-test-summary', 'missing-raw-report', env),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('writes the summary of a green report and succeeds, with no diagnostic even in GitHub Actions', () => {
     const { root, script, out } = checkout();
     try {
       const report = nativeReport(root);
       writeFileSync(join(out, 'vitest-pinned.json'), JSON.stringify(report));
-      const { code } = runScript(script);
+      const { code } = runScript(script, actionsEnv());
       expect(code).toBe(0);
-      const written: unknown = JSON.parse(
-        readFileSync(join(out, 'pinned-test-summary.json'), 'utf8'),
-      );
+      const written = readJsonFile(join(out, 'pinned-test-summary.json'));
       expect(written).toEqual(summarizeVitestReport(report, `${root}${sep}`));
       expect(written).toMatchObject({ success: true, testFiles: [...REQUIRED_PINNED_FILES] });
+      expect(readdirSync(out).sort()).toEqual(['pinned-test-summary.json', 'vitest-pinned.json']);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -734,35 +892,57 @@ describe('the generators', () => {
       const report = nativeReport(root);
       (report.testResults[0] as RawFile).assertionResults[0] = { status: 'failed' };
       writeFileSync(join(out, 'vitest-pinned.json'), JSON.stringify(report));
-      const { code, output } = runScript(script);
+      const env = actionsEnv();
+      const { code, output } = runScript(script, env);
       expect(code).toBe(1);
       expect(output).toContain('1 tests failed');
-      const written: unknown = JSON.parse(
-        readFileSync(join(out, 'pinned-test-summary.json'), 'utf8'),
+      expect(readJsonFile(join(out, 'pinned-test-summary.json'))).toMatchObject({
+        success: false,
+        failed: 1,
+      });
+      expect(readJsonFile(join(out, 'diagnostics', 'pinned-test-summary.json'))).toEqual(
+        ciDiagnostic('pinned-test-summary', 'summary-rules-failed', env),
       );
-      expect(written).toMatchObject({ success: false, failed: 1 });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   }, 60_000);
 
   it('refuses to write an identity outside CI, names every missing variable, and prints no secret', () => {
-    const target = join(REPOSITORY_ROOT, '.kadrion-out', 'ci-identity.json');
-    const before = existsSync(target) ? readFileSync(target) : null;
-    const env: NodeJS.ProcessEnv = {};
-    for (const [name, value] of Object.entries(process.env)) {
-      if (!/^(GITHUB|RUNNER|KADRION)_/.test(name)) env[name] = value;
+    const { root, script, out } = identityCheckout();
+    try {
+      const { code, output } = runScript(
+        script,
+        localEnv({
+          GITHUB_TOKEN: `${SECRET}-token`,
+          ACTIONS_RUNTIME_TOKEN: `${SECRET}-runtime`,
+        }),
+      );
+      expect(code).toBe(1);
+      expect(output).toContain('The CI identity cannot be written');
+      for (const name of IDENTITY_ENV) expect(output).toContain(`${name} is not set`);
+      expect(output).not.toContain(SECRET);
+      expect(existsSync(out)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
-    env.GITHUB_TOKEN = 'kadrion-test-secret-token';
-    env.ACTIONS_RUNTIME_TOKEN = 'kadrion-test-secret-runtime';
-    const { code, output } = runScript(
-      join(REPOSITORY_ROOT, 'tests', 'ci', 'write-ci-identity.ts'),
-      env,
-    );
-    expect(code).toBe(1);
-    expect(output).toContain('The CI identity cannot be written');
-    for (const name of IDENTITY_ENV) expect(output).toContain(`${name} is not set`);
-    expect(output).not.toContain('kadrion-test-secret');
-    expect(existsSync(target) ? readFileSync(target) : null).toEqual(before);
+  }, 60_000);
+
+  it('in GitHub Actions, leaves a diagnostic instead of a partial identity', () => {
+    const { root, script, out } = identityCheckout();
+    try {
+      const env = actionsEnv();
+      const { code, output } = runScript(script, env);
+      expect(code).toBe(1);
+      expect(output).toContain('The CI identity cannot be written');
+      expect(output).not.toContain(SECRET);
+      expect(readdirSync(out)).toEqual(['diagnostics']);
+      expect(readdirSync(join(out, 'diagnostics'))).toEqual(['ci-identity.json']);
+      expect(readJsonFile(join(out, 'diagnostics', 'ci-identity.json'))).toEqual(
+        ciDiagnostic('ci-identity', 'identity-check-failed', env),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   }, 60_000);
 });

@@ -7,7 +7,9 @@
  * prints the problems and fails, and the missing file is an evidence error. It
  * reads the environment by the exact names of `IDENTITY_ENV` only and never
  * writes the environment itself. It cannot run outside GitHub Actions: without
- * the GITHUB_* variables it fails, by design.
+ * the GITHUB_* variables it fails, by design. In GitHub Actions a failure also
+ * leaves `.kadrion-out/diagnostics/ci-identity.json` (`diagnostic.ts`), which is
+ * never evidence and never a partial identity.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -26,6 +28,7 @@ import {
   IDENTITY_ENV,
   type CiIdentityIo,
 } from './ci-identity.ts';
+import { writeCiDiagnostic } from './diagnostic.ts';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -81,6 +84,8 @@ try {
   );
 } catch (reason) {
   if (!(reason instanceof CiIdentityError)) throw reason;
+  // The problems first: a diagnostic that cannot be written must not hide them.
   console.error(reason.message);
   process.exitCode = 1;
+  writeCiDiagnostic(root, 'ci-identity', 'identity-check-failed', process.env);
 }

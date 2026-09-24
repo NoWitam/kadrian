@@ -98,7 +98,7 @@ shifted golden frame is pixels only.
 - Context: viewport {"width":1080,"height":1920}, device scale factor 1, locale `en-US`, time zone `UTC`; Node `v24.20.0`.
 - Runtime build: `sha256:b54743b4716562de078a04a42367508fd554130c53af4c190a43d498962d5115`.
 - Document (composition hash): `sha256:fa3c3c3051acb473d8941c2286ea69df935ae6ee5d502ceeeebb9eeacabf0312`.
-- Player dist tree (D33.10): `sha256:b3b6e61e4686427af9c6a9d798c335c8e1152132900e0fda6410416e9d4303a4`, 28 files, the manifest in the record.
+- Player dist tree (D33.10): `sha256:0cb316f41e87d1eaacdca352a57019a4caeee3413afed19a77c5be15c2685df8`, 28 files, the manifest in the record.
 - Golden manifest: `packages/test-fixtures/src/golden-frames/reference.golden-frames.json`, `sha256:6e4dc3973665fce575d7bdd3fc922eb112d191885ab5321bd5a2fcae767ba997`.
 - Record: version 2, `gate: true`, thresholds `{"differingPixels":0,"maxChannelDifference":0}` (D34.1).
 - Source: the first `test:pinned` pass of `pinned-run.sh reference` (PR-11), copied out before `goldens:update` (D33.6). The environment equals the golden frames' environment on every field that affects pixels, and the record is current with the build (checked by `check`).
@@ -225,35 +225,35 @@ Still open:
 
 ## 7. Open questions of §11
 
-| #   | Status after the spike                                                                                                                                                            |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Decided by D13                                                                                                                                                                    |
-| Q2  | Answered, D29.5                                                                                                                                                                   |
-| Q3  | Answered, D26 and D28                                                                                                                                                             |
-| Q4  | Answered, D29.1–29.2                                                                                                                                                              |
-| Q5  | Answered, D27                                                                                                                                                                     |
-| Q6  | Decided by D14                                                                                                                                                                    |
-| Q7  | Answered, D29.6                                                                                                                                                                   |
-| Q8  | Answered by measurement: no LFS                                                                                                                                                   |
-| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                                                                     |
-| Q10 | Decided by D15                                                                                                                                                                    |
-| Q11 | Decided by D16                                                                                                                                                                    |
-| Q12 | Decided by D21                                                                                                                                                                    |
-| Q13 | Decided by D16                                                                                                                                                                    |
-| Q14 | **Open**: the workflow is prepared and checked locally (PR-11); the first push has not been made and the remote workflow has not run (PR-12, section 9); see docs/ci/first-run.md |
-| Q15 | Decided by D20                                                                                                                                                                    |
-| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                                                                |
-| Q17 | Answered: `ValidatedComposition`                                                                                                                                                  |
+| #   | Status after the spike                                                                                                                                |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Decided by D13                                                                                                                                        |
+| Q2  | Answered, D29.5                                                                                                                                       |
+| Q3  | Answered, D26 and D28                                                                                                                                 |
+| Q4  | Answered, D29.1–29.2                                                                                                                                  |
+| Q5  | Answered, D27                                                                                                                                         |
+| Q6  | Decided by D14                                                                                                                                        |
+| Q7  | Answered, D29.6                                                                                                                                       |
+| Q8  | Answered by measurement: no LFS                                                                                                                       |
+| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                                         |
+| Q10 | Decided by D15                                                                                                                                        |
+| Q11 | Decided by D16                                                                                                                                        |
+| Q12 | Decided by D21                                                                                                                                        |
+| Q13 | Decided by D16                                                                                                                                        |
+| Q14 | **Open**: the first run of the workflow failed at `Pinned FFmpeg`, and PR-14 fixes its cause; no run has passed (section 9); see docs/ci/first-run.md |
+| Q15 | Decided by D20                                                                                                                                        |
+| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                                    |
+| Q17 | Answered: `ValidatedComposition`                                                                                                                      |
 
 ## 8. Recommended next phase
 
 The first phase after the spike should keep the engine narrow and harden what
 the spike proved, rather than widen it:
 
-1. **Push and run CI (Q14).** The owner pushes the repository and runs the
-   pinned workflow on a remote runner (docs/ci/first-run.md). This is the first
-   evidence that the gates hold outside the development machine. PR-11 prepared
-   the workflow and did not push, and PR-12 did not push either.
+1. **Run CI to green (Q14).** The owner pushed on 2026-09-24, and the first run
+   failed while installing FFmpeg (section 9). The run after PR-14 is the next
+   chance of the first evidence that the gates hold outside the development
+   machine (docs/ci/first-run.md).
 2. **Implement D36** (section 5): the host opt-in for Custom HTML in the
    Player, and no untrusted Custom HTML in the interactive preview by default.
    The decision was accepted on 2026-09-24, and its code comes in a pull
@@ -265,20 +265,29 @@ the spike proved, rather than widen it:
 Taskio integration, a timeline UI, and a language model stay outside the next
 phase until these hold.
 
-## 9. CI status after PR-13 (Q14)
+## 9. CI status after PR-14 (Q14)
 
 **Q14 is open.** On 2026-09-24:
 
-- The first push has not been made. `HEAD` and `origin/main` are `0d7b40d`,
-  and PR-02 to PR-13 are uncommitted local changes.
-- The remote workflow has not run.
-- No `kadrion-reports` artifact from CI exists.
+- The first push was made: commit `3ddd29d05be2938aabd996701abf9575f219ed33`
+  on `main`.
+- Its run https://github.com/NoWitam/kadrian/actions/runs/36009291627
+  (attempt 1, event `push`) failed at the step `Pinned FFmpeg`. The pinned
+  browser and export tests were skipped, and the steps `Pinned test summary`
+  and `CI identity` failed.
+- No `kadrion-reports` artifact from CI exists: the step `Reports` found no
+  `.kadrion-out/` directory to upload.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
 
-Nothing in this report reads or verifies a GitHub Actions result.
+The cause: the pinned Playwright image has no `xz`, so `tar -xJf` could not
+decompress the FFmpeg archive. PR-14 decompresses with `xz` where it runs and
+with `python3` and `lzma` otherwise, extracts with `--no-same-owner` into a
+staging directory, and publishes only verified binaries. In GitHub Actions, a
+failing stage now leaves a diagnostic in `.kadrion-out/diagnostics/`, which is
+never evidence. No run of the fixed workflow has happened yet.
 
-PR-13 prepared the evidence that the first run will produce:
+PR-13 prepared the evidence that a run produces:
 
 - `.kadrion-out/vitest-pinned.json`, with its Kadrion-owned summary
   `pinned-test-summary.json`;

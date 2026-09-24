@@ -9,8 +9,9 @@ renderer and its runtime build, the Custom HTML sandbox, the Player, the
 Producer with MP4 export, the command bus, and the AI tool contract exist. Each
 of the five proofs of the spike has evidence in the repository, and the parity
 of the Player and the Producer is measured and gated
-([`docs/spike/report.md`](docs/spike/report.md)). The workflow has not yet run
-on a GitHub runner ([`docs/ci/first-run.md`](docs/ci/first-run.md)). The
+([`docs/spike/report.md`](docs/spike/report.md)). No run of the workflow on a
+GitHub runner has passed yet: the first one failed while installing FFmpeg
+([`docs/ci/first-run.md`](docs/ci/first-run.md)). The
 packages are private and unpublished; the APIs below are those of the spike and
 may still change.
 
@@ -40,6 +41,8 @@ The browser tests and the Producer need the Chromium that `playwright-core`
 1.63.0 pins (D26): `corepack pnpm exec playwright-core install chromium --no-shell`.
 The MP4 export needs the pinned FFmpeg build (D29.1), a Linux x64 build that
 `node --run ffmpeg:fetch` downloads into `.kadrion-cache/ffmpeg/` and verifies.
+It needs `tar`, and `xz` or `python3` with its `lzma` module to decompress the
+archive.
 Golden frames and the reference output come only from the pinned container
 `mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30…a27` (D26.2), which
 `tests/pinned/container/pinned-run.sh` runs; a run anywhere else is

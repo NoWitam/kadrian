@@ -44,7 +44,7 @@
     "width": 1080,
     "height": 1920
   },
-  "playerDistTreeSha256": "sha256:b3b6e61e4686427af9c6a9d798c335c8e1152132900e0fda6410416e9d4303a4",
+  "playerDistTreeSha256": "sha256:0cb316f41e87d1eaacdca352a57019a4caeee3413afed19a77c5be15c2685df8",
   "playerDistManifest": [
     {
       "path": "packages/player/dist/agent.js",
@@ -58,8 +58,8 @@
     },
     {
       "path": "packages/player/dist/index.js",
-      "size": 578,
-      "sha256": "sha256:76ab2b5e91599d8107ccfd5ddcce7d61034c4200206af6fedf12f3b9482e9594"
+      "size": 508,
+      "sha256": "sha256:422161fd0cfc1e727dd21997a9eb55e9c2182690815bd52689a72a90b36ab9d5"
     },
     {
       "path": "packages/player/dist/player.js",

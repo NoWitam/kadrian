@@ -1,25 +1,73 @@
 # The first CI run (Q14)
 
-`.github/workflows/ci.yml` (D26.6) has **never run**. Q14 stays open until a run
-on a remote GitHub runner has met every criterion below. A local run of the same
-commands, including `tests/pinned/container/pinned-run.sh`, does **not** verify
-CI.
+`.github/workflows/ci.yml` (D26.6) has **never passed**. Its first run failed
+(below). Q14 stays open until a run on a remote GitHub runner has met every
+criterion below. A local run of the same commands, including
+`tests/pinned/container/pinned-run.sh`, does **not** verify CI.
 
-## Status after PR-13 (2026-09-24)
+## Status after PR-14 (2026-09-24)
 
 **Status: Q14 is open.**
 
-- The first push has not been made: `HEAD` and `origin/main` are still
-  `0d7b40d`, and PR-02 to PR-13 are uncommitted local changes.
-- The remote workflow has not run.
-- No `kadrion-reports` artifact from CI exists.
+- The first push was made: commit `3ddd29d05be2938aabd996701abf9575f219ed33`
+  on `main`.
+- Its run https://github.com/NoWitam/kadrian/actions/runs/36009291627
+  (attempt 1, event `push`) failed at the step `Pinned FFmpeg`.
+- The pinned browser and export tests were skipped. The steps
+  `Pinned test summary` and `CI identity` failed, because nothing they need
+  existed.
+- No `kadrion-reports` artifact from CI exists: the step `Reports` found no
+  `.kadrion-out/` directory to upload.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
 
-PR-13 prepared the evidence that a run will produce, and the validator that
-will check it. It did not run the workflow, and it created no evidence.
+PR-14 fixes the cause of that failure (below). No run of the fixed workflow has
+happened yet, and PR-14 created no evidence.
 
-## What was checked locally (PR-11 to PR-13)
+## The first run and its cause (PR-14)
+
+The step conclusions come from the public page of the run. Its logs need a
+signed-in account and were not read; the cause was reproduced instead:
+
+- **Cause.** `node --run ffmpeg:fetch` extracted the archive with `tar -xJf`.
+  The pinned Playwright image has no `xz` program, so `tar` could not
+  decompress the archive (`xz: Cannot exec`), after the archive had passed its
+  SHA-256. This was reproduced as root in the pinned image on 2026-09-24. The
+  image has `python3` with its standard `lzma` module.
+- **A second fault.** GNU tar run as root gives the extracted files the
+  archive's owner, uid 1001. Where root cannot do that (for example on a WSL
+  mount), tar fails with "Cannot change ownership". In Docker Desktop it
+  succeeds, so this was not the cause of the run, but it is fixed too.
+- **Fix** (`tests/ci/ffmpeg-install.ts`), in this order:
+  1. The archive is verified by its SHA-256.
+  2. It is decompressed by `xz -dc` if `xz` runs, otherwise by `python3` with
+     `lzma`. Neither is an explicit `no-decompressor` error.
+  3. The stream goes to `tar -x -f - --no-same-owner`. Both processes are
+     started without a shell, and both must exit 0.
+  4. Only `bin/ffmpeg`, `bin/ffprobe`, and `LICENSE.txt` are extracted, into a
+     staging directory.
+  5. Both binaries must hash to their pins; then the staging directory is
+     renamed to the target. Any failure removes the staging directory, and a
+     verified installation is reused on the next run.
+
+  A cached archive with another hash is removed, and the run fails; the next
+  run downloads it again. The real `python3` path was run in the pinned image,
+  and the `xz` path on the development machine. The process handling is tested
+  with `node` standing in for the decompressor and `tar`.
+
+  The FFmpeg release, its URL, the three hashes, the image, and the steps of
+  the workflow are unchanged.
+
+- **Diagnostics.** In GitHub Actions, when `ffmpeg:fetch`, the summary, or the
+  identity refuses, it now writes `.kadrion-out/diagnostics/<stage>.json`: the
+  stage, a fixed error code, and the commit, run, attempt, and workflow of the
+  run. A crash before that point (for example a build error) leaves none. With
+  it, the artifact is expected to be uploaded even after an early failure; no
+  run has shown that yet. A diagnostic is never evidence, and an artifact that
+  holds one, in a directory named `diagnostics` in any letter case, cannot
+  close Q14.
+
+## What was checked locally (PR-11 to PR-14)
 
 `tests/repo/pinned-environment.test.ts` checks the following. It proves the
 workflow is consistent, not that it works:
@@ -33,6 +81,8 @@ workflow is consistent, not that it works:
     applies in CI.
   - The image contains git 2.43.0 and Node 24, which the evidence steps need
     (checked with `docker run` on 2026-09-24).
+  - It has `python3` with `lzma` and no `xz`, so `ffmpeg:fetch` decompresses
+    with Python there (PR-14).
 - **Actions.** Actions are pinned by full 40-hex commit SHAs. On 2026-09-23 the
   GitHub API showed that:
   - `actions/checkout` `v5.1.0` is commit `fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09`;
@@ -46,6 +96,11 @@ workflow is consistent, not that it works:
     `node --run build && vitest run --config vitest.pinned.config.ts`.
   - Its configuration writes the raw report `.kadrion-out/vitest-pinned.json`
     and allows no retry.
+- **FFmpeg install (PR-14).** `tests/ci/ffmpeg-install.test.ts` checks, without
+  a network, the three ways of decompressing (`xz`, `python3` with `lzma`,
+  neither) and the arguments of `tar`. It also checks that the staging
+  directory is removed after every failure, and that a verified installation
+  is reused.
 - **Evidence steps (PR-13).** These run in this order, after the pinned tests:
   - **Pinned test summary** writes `.kadrion-out/pinned-test-summary.json`
     (`tests/ci/write-pinned-summary.ts`).
@@ -101,19 +156,27 @@ workflow is consistent, not that it works:
   verified and used.
 - **`parity/parity-measurement.json`:** the gated parity record. If it fails,
   it is written as `parity-measurement.failed.json` instead.
+- **`diagnostics/<stage>.json` (PR-14):** only when a stage failed:
+  `pinned-ffmpeg`, `pinned-test-summary`, or `ci-identity`
+  (`tests/ci/diagnostic.ts`). It holds `"evidence": false`, the stage, a fixed
+  error code, and the commit, run ID, attempt, workflow ref, and workflow
+  commit, each kept only if it has its format. It holds no message, no path,
+  and no other variable.
 
 The identity is auxiliary evidence. Closing Q14 still compares the run URL,
 `head_sha`, attempt, event, and conclusion with the metadata of GitHub Actions
 itself.
 
-## The first push (the owner)
+## Pushing (the owner)
 
-1. Review the local changes of PR-02 to PR-13 and commit them yourself. Nothing
-   in this repository commits or pushes on its own.
+The owner made the first push on 2026-09-24 (`3ddd29d`). For the next one:
+
+1. Review the local changes of PR-14 and commit them yourself. Nothing in this
+   repository commits or pushes on its own.
 2. Push to `origin` (`github.com/NoWitam/kadrian`). A branch plus a pull
    request runs the workflow twice (`push` and `pull_request`). A push to
    `main` runs it once.
-3. Allow GitHub Actions for the repository if it asks. The job needs no secret.
+3. The job needs no secret.
 
 ## When Q14 may close (owner, 2026-09-24)
 
@@ -170,7 +233,8 @@ The machine checks, per criterion:
   - Every carried text must hash to its file entry, and the identity must bind
     each report by that hash.
   - Every time the reports record must lie within the run's start and end.
-  - Neither `.failed` variant may be present.
+  - Neither `.failed` variant may be present, and nothing under
+    `diagnostics/`.
 - **(5)–(7) — the parity record.**
   - Gated, with thresholds 0/0 and every row 0/0, measured in the pinned
     image.
@@ -192,13 +256,15 @@ The rest stays the owner's review:
   network (D28.9); the reference run remains the evidence for the Producer,
   and the Player's policy is D36.
 
-The counts to expect: **Check** reports 49 files and 1 858 tests, the count of the
-final PR-13 tree on the development machine and in the pinned container, which
-runs the same image as CI, unless a later PR changed it. The pinned step
-reports `Test Files 7 passed (7)` and `Tests 85 passed (85)`. A mismatch is
-investigated, never rounded away.
+What the runs must show is a rule, not a count: `check` passes with no failed
+or skipped test, and the pinned step runs exactly the seven pinned test files,
+each with every test passed and none skipped, as the summary checks. The
+number of tests changes from one pull request to the next and is not part of
+the evidence; a different number on the development machine and in the pinned
+container, which runs the same image as CI, is investigated, never rounded
+away.
 
-No evidence file exists while nothing has been pushed, and none may be made up.
+No evidence file exists while no run has passed, and none may be made up.
 
 ## If a gate fails on the runner: analysis first (owner, 2026-09-24)
 

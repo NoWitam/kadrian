@@ -154,6 +154,18 @@ export interface NetworkFacts {
   readonly loopbackOnly: boolean;
 }
 
+/**
+ * The interface names of this host, as `os.networkInterfaces()` lists them.
+ * The render and the export read them here; their unit tests inject a list
+ * instead, because a host may refuse the call (`uv_interface_addresses`). A
+ * failure propagates: nothing is assumed about a network that was not read.
+ */
+export function hostNetworkInterfaces(
+  read: () => Readonly<Record<string, unknown>> = networkInterfaces,
+): string[] {
+  return Object.keys(read());
+}
+
 export function networkFacts(interfaces: readonly string[]): NetworkFacts {
   const sorted = [...interfaces].sort();
   return { interfaces: sorted, loopbackOnly: sorted.length === 1 && sorted[0] === 'lo' };
@@ -232,6 +244,6 @@ export function environmentManifest(
     timezone: TIMEZONE,
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: DEVICE_SCALE_FACTOR,
-    network: networkFacts(facts.networkInterfaces ?? Object.keys(networkInterfaces())),
+    network: networkFacts(facts.networkInterfaces ?? hostNetworkInterfaces()),
   };
 }

@@ -40,6 +40,7 @@ import {
   renderFrames,
   verifiedScript,
 } from '../src/index.js';
+import { hostNetworkInterfaces } from '../src/environment.js';
 import { producerCode } from '../src/errors.js';
 import { validateComposition, type ValidatedComposition } from '@kadrion/schema';
 
@@ -112,7 +113,9 @@ describe('the pins of D26', () => {
   });
 
   it('record the environment manifest of D26.4', () => {
-    const manifest = environmentManifest(CHROMIUM_VERSION, { width: 1080, height: 1920 }, pinned);
+    // The network is injected: a unit test never reads the host's interfaces.
+    const facts = { ...pinned, networkInterfaces: ['lo'] };
+    const manifest = environmentManifest(CHROMIUM_VERSION, { width: 1080, height: 1920 }, facts);
     expect(manifest).toMatchObject({
       pinned: true,
       image: PINNED_IMAGE,
@@ -129,10 +132,21 @@ describe('the pins of D26', () => {
       viewport: { width: 1080, height: 1920 },
       deviceScaleFactor: 1,
     });
-    expect(environmentManifest(CHROMIUM_VERSION, { width: 1, height: 1 }, pinned).node).toBe(
+    expect(environmentManifest(CHROMIUM_VERSION, { width: 1, height: 1 }, facts).node).toBe(
       process.version,
     );
-    expect(environmentManifest('1.0', { width: 1, height: 1 }, pinned).pinned).toBe(false);
+    expect(environmentManifest('1.0', { width: 1, height: 1 }, facts).pinned).toBe(false);
+  });
+
+  it('read the host interfaces through one reader that never assumes a network (D28.9)', () => {
+    expect(hostNetworkInterfaces(() => ({ lo: [], eth0: [] }))).toEqual(['lo', 'eth0']);
+    expect(hostNetworkInterfaces(() => ({}))).toEqual([]);
+    // A host that refuses the call is an error, not an isolated run.
+    expect(() =>
+      hostNetworkInterfaces(() => {
+        throw new Error('uv_interface_addresses returned Unknown system error');
+      }),
+    ).toThrow('uv_interface_addresses');
   });
 
   it('let golden frames be written in the pinned environment without a network only (D26.5, D28.9)', () => {

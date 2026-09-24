@@ -9,8 +9,10 @@
  * statement that Q14 is closed needs
  * `docs/ci/q14-evidence.json`, which must pass `q14EvidenceProblems` — every
  * criterion a machine can check — and the §11 row must name its run and
- * commit. While Q14 is open, the report and the first-run notes say plainly
- * that nothing was pushed and nothing ran. No evidence file exists for the
+ * commit. While Q14 is open, the report, the first-run notes, and the §11 row
+ * name the run that failed, its commit and attempt, and say that no artifact
+ * exists. A diagnostic of a failed stage is never evidence, not even under the
+ * name of a report it would stand in for. No evidence file exists for the
  * current state, and none is made up here: the validator is tested on
  * synthetic evidence built in this file.
  */
@@ -21,6 +23,7 @@ import { FFMPEG_SHA256, FFPROBE_SHA256, PINNED_IMAGE } from '@kadrion/producer';
 import { goldenTimestamps } from '@kadrion/test-fixtures';
 import { describe, expect, it } from 'vitest';
 
+import { ciDiagnostic } from '../ci/diagnostic.js';
 import { REQUIRED_PINNED_FILES, summarizeVitestReport } from '../ci/pinned-summary.js';
 import type { GoldenManifest } from '../parity/parity.js';
 
@@ -134,20 +137,24 @@ describe('the status of Q14', () => {
     expect(q14EvidenceProblems(readJson(...EVIDENCE), context)).toEqual([]);
   });
 
-  it('while open, says that nothing was pushed and no remote run or artifact exists', () => {
+  it('while open, names the run that failed, its commit and attempt, and that no artifact exists', () => {
     if (closed) return;
+    const run = /https:\/\/github\.com\/NoWitam\/kadrian\/actions\/runs\/\d+/;
+    const commit = /`?\b[0-9a-f]{40}\b`?/;
     // The sections that state the status, not the whole files: a sentence
     // elsewhere (the Q14 row) must not stand in for one of these.
     for (const text of [section(report, '9. CI status'), statusSection(firstRun)]) {
-      expect(text).toMatch(/first push (?:was|has) not been made/);
-      expect(text).toMatch(/remote workflow (?:was not run|did not run|has not run)/);
+      expect(text).toMatch(run);
+      expect(text).toMatch(commit);
+      expect(text).toMatch(/\(attempt \d+, event `push`\)\s+failed at the step `[^`]+`/);
       expect(text).toMatch(/No `kadrion-reports` artifact from CI exists/);
       expect(text).toMatch(/do not replace a run on a\s+GitHub runner/);
     }
     // The §11 row says the same in its own words.
     const row = rowOf(spec, 'Q14');
-    expect(row).toMatch(/the first push has not been made/);
-    expect(row).toMatch(/the remote workflow has not run/);
+    expect(row).toMatch(run);
+    expect(row).toMatch(commit);
+    expect(row).toMatch(/attempt \d+\) failed at/);
     expect(row).toMatch(/no CI artifact exists/);
   });
 });
@@ -359,6 +366,17 @@ describe('q14EvidenceProblems', () => {
     expect(problemsOf(assemble(parts()))).toBe('');
   });
 
+  it('refuses only the diagnostics directory, not a file whose name merely resembles it', () => {
+    expect(
+      edited((draft) =>
+        draft.artifact.files.push({
+          path: 'diagnostic-notes.txt',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      ),
+    ).toBe('');
+  });
+
   // The run, the job, the steps, and the artifact: GitHub's metadata.
   it.each<[string, (draft: Draft) => void, string]>([
     ['a pull_request run', (draft) => (draft.run.event = 'pull_request'), 'not push'],
@@ -422,6 +440,60 @@ describe('q14EvidenceProblems', () => {
           sha256: `sha256:${'d'.repeat(64)}`,
         }),
       'parity-measurement.failed.json',
+    ],
+    [
+      'a diagnostic of a failed stage in the artifact',
+      (draft) =>
+        draft.artifact.files.push({
+          path: 'diagnostics/pinned-ffmpeg.json',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'the artifact has the diagnostic diagnostics/pinned-ffmpeg.json of a failed stage',
+    ],
+    [
+      'a diagnostic in a subdirectory, of another type',
+      (draft) =>
+        draft.artifact.files.push({
+          path: 'diagnostics/sub/notes.txt',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'the diagnostic diagnostics/sub/notes.txt',
+    ],
+    [
+      'a diagnostic in a directory of other letter case',
+      (draft) =>
+        draft.artifact.files.push({
+          path: 'Diagnostics/pinned-ffmpeg.json',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'the diagnostic Diagnostics/pinned-ffmpeg.json',
+    ],
+    [
+      'a diagnostic behind a leading ./',
+      (draft) =>
+        draft.artifact.files.push({
+          path: './diagnostics/ci-identity.json',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'the diagnostic ./diagnostics/ci-identity.json',
+    ],
+    [
+      'a diagnostic behind a leading /',
+      (draft) =>
+        draft.artifact.files.push({
+          path: '/diagnostics/ci-identity.json',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'the diagnostic /diagnostics/ci-identity.json',
+    ],
+    [
+      'a diagnostic listed with a Windows separator',
+      (draft) =>
+        draft.artifact.files.push({
+          path: 'diagnostics\\ci-identity.json',
+          sha256: `sha256:${'d'.repeat(64)}`,
+        }),
+      'of a failed stage',
     ],
     [
       'no ci-identity.json',
@@ -659,6 +731,25 @@ describe('q14EvidenceProblems', () => {
     ],
   ])('refuses %s', (_, edit, problem) => {
     expect(fromParts(edit)).toContain(problem);
+  });
+
+  it('never takes a diagnostic for the identity or the summary it would stand in for', () => {
+    const run = { GITHUB_SHA: HEAD, GITHUB_RUN_ID: '1', GITHUB_RUN_ATTEMPT: '1' };
+    // Every file hashes to its entry and the identity binds them: only the content is wrong.
+    const asIdentity = fromParts((given) => {
+      given.identity = ciDiagnostic(
+        'ci-identity',
+        'identity-check-failed',
+        run,
+      ) as unknown as Parts['identity'];
+    });
+    expect(asIdentity).toContain('identity: unsupported identity schemaVersion');
+    const asSummary = fromParts(
+      () => undefined,
+      ciDiagnostic('pinned-test-summary', 'missing-raw-report', run),
+    );
+    expect(asSummary).toContain('summary: unsupported summary schemaVersion');
+    expect(asSummary).toContain('the summary is not the one derived from vitest-pinned.json');
   });
 
   it('refuses a raw report that is not a Vitest report, even beside a well-formed summary', () => {

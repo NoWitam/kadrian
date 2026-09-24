@@ -92,9 +92,11 @@ describe('the pinned render environment (D26)', () => {
     expect(readText('docs', 'adr', 'D26-pinned-render-environment.md')).toContain(IMAGE);
   });
 
-  it("parses as YAML with Prettier's parser, and still says that it has never run (Q14)", async () => {
+  it("parses as YAML with Prettier's parser, and still says that no run has passed (Q14)", async () => {
     await expect(format(workflow, { parser: 'yaml' })).resolves.toBeTypeOf('string');
-    expect(workflow).toMatch(/UNVERIFIED/);
+    expect(workflow).toMatch(/^# .*UNVERIFIED: no run has passed\.$/m);
+    // Not the claim of PR-13, which the first run made false.
+    expect(workflow).not.toMatch(/has never run/);
   });
 
   it('runs exactly the root script test:pinned, which builds and runs the pinned Vitest configuration', () => {

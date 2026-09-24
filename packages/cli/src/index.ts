@@ -3,7 +3,7 @@
  *
  * `runCli` implements `kadrion render-frames` (D28.8) and `kadrion export` (D29.10)
  * on top of the Producer's `renderFrames` and `exportMp4`; `bin.ts` is the
- * executable. D29 is Proposed and may change until the project owner accepts it.
+ * executable.
  */
 export {
   EXIT_OK,

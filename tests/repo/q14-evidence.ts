@@ -18,7 +18,7 @@
  * The rest stays the owner's review: that the commit is the reviewed code, and
  * that the zip was downloaded from that run and attempt.
  *
- * No evidence exists while nothing has been pushed. This module only states
+ * No evidence exists while no run has passed. This module only states
  * what one must contain; it never creates one.
  */
 import { createHash } from 'node:crypto';
@@ -51,6 +51,9 @@ export const FAILED_VARIANTS = Object.freeze([
   'golden-comparison.failed.json',
   'parity/parity-measurement.failed.json',
 ]);
+
+/** The directory of the diagnostics of failed stages: anything in it refuses the evidence. */
+export const DIAGNOSTICS = 'diagnostics';
 
 export interface Q14Evidence {
   readonly evidenceVersion: 1;
@@ -188,6 +191,20 @@ export function q14EvidenceProblems(
   }
   for (const path of FAILED_VARIANTS) {
     if (hashOf.has(path)) problems.push(`the artifact has ${path}`);
+  }
+  // A diagnostic of a failed stage (tests/ci/diagnostic.ts) is never evidence,
+  // wherever a path puts the directory (`./diagnostics/…`, `/diagnostics/…`)
+  // and in any letter case.
+  for (const { path } of files as readonly { path?: unknown }[]) {
+    if (
+      typeof path === 'string' &&
+      path
+        .replaceAll('\\', '/')
+        .split('/')
+        .some((segment) => segment.toLowerCase() === DIAGNOSTICS)
+    ) {
+      problems.push(`the artifact has the diagnostic ${path} of a failed stage`);
+    }
   }
 
   // The identity: which run and commit wrote these files.
