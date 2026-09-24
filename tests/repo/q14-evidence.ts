@@ -18,14 +18,20 @@
  * The rest stays the owner's review: that the commit is the reviewed code, and
  * that the zip was downloaded from that run and attempt.
  *
- * No evidence exists while no run has passed. This module only states
+ * No evidence exists until a green run of the reviewed commit and its artifact
+ * have been checked. This module only states
  * what one must contain; it never creates one.
  */
 import { createHash } from 'node:crypto';
 
 import { FFMPEG_SHA256, FFPROBE_SHA256, PINNED_IMAGE } from '@kadrion/producer';
 
-import { BOUND_REPORTS, ciIdentityProblems, type CiIdentity } from '../ci/ci-identity.js';
+import {
+  BOUND_REPORTS,
+  ciIdentityProblems,
+  WORKFLOW_PATH,
+  type CiIdentity,
+} from '../ci/ci-identity.js';
 import {
   pinnedSummaryProblems,
   summarizeVitestReport,
@@ -38,10 +44,42 @@ import {
   type ParityRow,
 } from '../parity/parity.js';
 
-export const REPOSITORY = 'NoWitam/kadrian';
-export const RUN_URL = /^https:\/\/github\.com\/NoWitam\/kadrian\/actions\/runs\/(\d+)$/;
+/**
+ * The repository the evidence must come from (owner, 2026-09-24: it was renamed
+ * from `NoWitam/kadrian`). GitHub treats owner and repository names without
+ * case, so they alone are compared without case (PR-15); the host, the workflow
+ * path, the ref, and the run ID are compared exactly.
+ */
+export const REPOSITORY = 'NoWitam/Kadrian';
+/** A run on github.com over https: owner, repository, and run ID. */
+export const RUN_URL = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/actions\/runs\/(\d+)$/;
+/** An owner or repository name: ASCII only, so no other letter can lower-case into it. */
+const NAME = /^[A-Za-z0-9_.-]+$/;
 const SHA = /^[0-9a-f]{40}$/;
 const HASH = /^sha256:[0-9a-f]{64}$/;
+
+/**
+ * Whether `name` is `owner/repository` of `REPOSITORY`: exactly two ASCII
+ * segments, each equal to its counterpart without case.
+ */
+export function sameRepository(name: unknown): boolean {
+  if (typeof name !== 'string') return false;
+  const segments = name.split('/');
+  const expected = REPOSITORY.split('/');
+  return (
+    segments.length === expected.length &&
+    segments.every(
+      (segment, at) => NAME.test(segment) && segment.toLowerCase() === expected[at]?.toLowerCase(),
+    )
+  );
+}
+
+/** Whether `text` names a run of this repository by its URL (for the status in the docs). */
+export function namesRunOfRepository(text: string): boolean {
+  return [
+    ...text.matchAll(/https:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/actions\/runs\/\d+/g),
+  ].some((match) => sameRepository(`${match[1] ?? ''}/${match[2] ?? ''}`));
+}
 
 /** The files of the artifact whose texts the evidence carries and the checks read. */
 export const EVIDENCE_FILES = Object.freeze(['ci-identity.json', ...BOUND_REPORTS] as const);
@@ -134,8 +172,12 @@ export function q14EvidenceProblems(
   // The run, the job, and the steps: GitHub's own metadata.
   const run = evidence.run;
   if (run?.event !== 'push') problems.push(`the run's event is ${String(run?.event)}, not push`);
-  const runUrl = typeof run?.htmlUrl === 'string' ? RUN_URL.exec(run.htmlUrl) : null;
-  if (runUrl === null) problems.push('the run URL is not a run of github.com/NoWitam/kadrian');
+  const runMatch = typeof run?.htmlUrl === 'string' ? RUN_URL.exec(run.htmlUrl) : null;
+  const runUrl =
+    runMatch !== null && sameRepository(`${runMatch[1] ?? ''}/${runMatch[2] ?? ''}`)
+      ? runMatch
+      : null;
+  if (runUrl === null) problems.push(`the run URL is not a run of github.com/${REPOSITORY}`);
   if (typeof run?.headSha !== 'string' || !SHA.test(run.headSha)) {
     problems.push('the head SHA is not 40 hex digits');
   }
@@ -213,7 +255,7 @@ export function q14EvidenceProblems(
   if (identity?.commitSha !== run?.headSha) {
     problems.push("the identity's commitSha is not the run's head SHA");
   }
-  if (runUrl !== null && String(identity?.runId) !== runUrl[1]) {
+  if (runUrl !== null && String(identity?.runId) !== runUrl[3]) {
     problems.push("the identity's runId is not the run's");
   }
   if (identity?.runAttempt !== run?.runAttempt) {
@@ -222,14 +264,24 @@ export function q14EvidenceProblems(
   if (identity?.eventName !== run?.event) {
     problems.push("the identity's eventName is not the run's event");
   }
-  if (identity?.repository !== REPOSITORY) {
+  if (!sameRepository(identity?.repository)) {
     problems.push(`the identity's repository is not ${REPOSITORY}`);
   }
-  if (
-    typeof identity?.workflowRef !== 'string' ||
-    !identity.workflowRef.startsWith(`${REPOSITORY}/.github/workflows/ci.yml@`)
-  ) {
+  // `owner/repository/<workflow path>@<ref>`, split at the first @: owner and
+  // repository without case, the path and the ref exactly as they are.
+  const workflowRef = typeof identity?.workflowRef === 'string' ? identity.workflowRef : '';
+  const at = workflowRef.indexOf('@');
+  const [owner = '', repository = '', ...path] = (at < 0 ? '' : workflowRef.slice(0, at)).split(
+    '/',
+  );
+  if (at < 0 || !sameRepository(`${owner}/${repository}`) || path.join('/') !== WORKFLOW_PATH) {
     problems.push("the identity's workflowRef is not this repository's ci.yml");
+  } else {
+    const ref = workflowRef.slice(at + 1);
+    if (ref === '') problems.push("the identity's workflowRef names no ref");
+    else if (ref !== identity?.ref) {
+      problems.push("the identity's workflowRef names another ref than the identity's ref");
+    }
   }
   if (identity?.workflowSha256 !== sha256(context.workflow)) {
     problems.push('the identity names another workflow file than the committed one');

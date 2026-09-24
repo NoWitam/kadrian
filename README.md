@@ -9,8 +9,9 @@ renderer and its runtime build, the Custom HTML sandbox, the Player, the
 Producer with MP4 export, the command bus, and the AI tool contract exist. Each
 of the five proofs of the spike has evidence in the repository, and the parity
 of the Player and the Producer is measured and gated
-([`docs/spike/report.md`](docs/spike/report.md)). No run of the workflow on a
-GitHub runner has passed yet: the first one failed while installing FFmpeg
+([`docs/spike/report.md`](docs/spike/report.md)). The workflow failed on its
+first run and passed on the run of PR-14; Q14 closes only on a green run of the
+reviewed commit with its own artifact
 ([`docs/ci/first-run.md`](docs/ci/first-run.md)). The
 packages are private and unpublished; the APIs below are those of the spike and
 may still change.

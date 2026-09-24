@@ -10,9 +10,10 @@
  * `docs/ci/q14-evidence.json`, which must pass `q14EvidenceProblems` — every
  * criterion a machine can check — and the §11 row must name its run and
  * commit. While Q14 is open, the report, the first-run notes, and the §11 row
- * name the run that failed, its commit and attempt, and say that no artifact
- * exists. A diagnostic of a failed stage is never evidence, not even under the
- * name of a report it would stand in for. No evidence file exists for the
+ * name a run of this repository, its commit and attempt, and how it ended, and
+ * they say that no evidence file exists. A diagnostic of a failed stage is
+ * never evidence, not even under the name of a report it would stand in for.
+ * No evidence file exists for the
  * current state, and none is made up here: the validator is tested on
  * synthetic evidence built in this file.
  */
@@ -27,7 +28,13 @@ import { ciDiagnostic } from '../ci/diagnostic.js';
 import { REQUIRED_PINNED_FILES, summarizeVitestReport } from '../ci/pinned-summary.js';
 import type { GoldenManifest } from '../parity/parity.js';
 
-import { q14EvidenceProblems, requiredSteps, type Q14Evidence } from './q14-evidence.js';
+import {
+  namesRunOfRepository,
+  q14EvidenceProblems,
+  requiredSteps,
+  sameRepository,
+  type Q14Evidence,
+} from './q14-evidence.js';
 import { readJson, readText, repoPath } from './repo.js';
 
 /** The only bold phrases that say Q14 is open, one per place. */
@@ -137,25 +144,29 @@ describe('the status of Q14', () => {
     expect(q14EvidenceProblems(readJson(...EVIDENCE), context)).toEqual([]);
   });
 
-  it('while open, names the run that failed, its commit and attempt, and that no artifact exists', () => {
+  it('while open, names a run of this repository, its commit and how it ended, and that no evidence file exists', () => {
     if (closed) return;
-    const run = /https:\/\/github\.com\/NoWitam\/kadrian\/actions\/runs\/\d+/;
+    // What the docs say about the evidence file is also true of the repository.
+    expect(evidenceExists, 'docs/ci/q14-evidence.json exists while Q14 is open').toBe(false);
     const commit = /`?\b[0-9a-f]{40}\b`?/;
+    // How a named run ended: it failed at a step, or it passed every step.
+    const outcome =
+      /attempt \d+,\s+event `push`\)\s+(?:failed at the step `[^`]+`|passed every step)/;
     // The sections that state the status, not the whole files: a sentence
     // elsewhere (the Q14 row) must not stand in for one of these.
     for (const text of [section(report, '9. CI status'), statusSection(firstRun)]) {
-      expect(text).toMatch(run);
+      expect(namesRunOfRepository(text), text).toBe(true);
       expect(text).toMatch(commit);
-      expect(text).toMatch(/\(attempt \d+, event `push`\)\s+failed at the step `[^`]+`/);
-      expect(text).toMatch(/No `kadrion-reports` artifact from CI exists/);
+      expect(text).toMatch(outcome);
+      expect(text).toMatch(/No evidence file exists/);
       expect(text).toMatch(/do not replace a run on a\s+GitHub runner/);
     }
     // The §11 row says the same in its own words.
     const row = rowOf(spec, 'Q14');
-    expect(row).toMatch(run);
+    expect(namesRunOfRepository(row), row).toBe(true);
     expect(row).toMatch(commit);
-    expect(row).toMatch(/attempt \d+\) failed at/);
-    expect(row).toMatch(/no CI artifact exists/);
+    expect(row).toMatch(/attempt \d+\) (?:failed at|passed every step)/);
+    expect(row).toMatch(/no evidence file exists/);
   });
 });
 
@@ -234,8 +245,8 @@ function parts(): Parts {
       gitHead: HEAD,
       workflowSha: HEAD,
       ref: 'refs/heads/main',
-      workflowRef: 'NoWitam/kadrian/.github/workflows/ci.yml@refs/heads/main',
-      repository: 'NoWitam/kadrian',
+      workflowRef: 'NoWitam/Kadrian/.github/workflows/ci.yml@refs/heads/main',
+      repository: 'NoWitam/Kadrian',
       workflowPath: '.github/workflows/ci.yml',
       workflowSha256: hash(workflow),
       workflowSha256AtCommit: hash(workflow),
@@ -289,7 +300,7 @@ function assemble(given: Parts, summaryOverride?: unknown): Q14Evidence {
     evidenceVersion: 1,
     run: {
       event: 'push',
-      htmlUrl: 'https://github.com/NoWitam/kadrian/actions/runs/1',
+      htmlUrl: 'https://github.com/NoWitam/Kadrian/actions/runs/1',
       headSha: HEAD,
       conclusion: 'success',
       runAttempt: 1,
@@ -556,13 +567,13 @@ describe('q14EvidenceProblems', () => {
     [
       'an identity of another repository',
       (given) => (given.identity.repository = 'other/kadrian'),
-      'repository is not NoWitam/kadrian',
+      "the identity's repository is not NoWitam/Kadrian",
     ],
     [
       'an identity of another workflow ref',
       (given) =>
         (given.identity.workflowRef = 'other/kadrian/.github/workflows/ci.yml@refs/heads/main'),
-      'workflowRef',
+      "the identity's workflowRef is not this repository's ci.yml",
     ],
     [
       'an identity of another workflow file',
@@ -767,5 +778,203 @@ describe('q14EvidenceProblems', () => {
     expect(problemsOf(assemble(given, forged))).toContain(
       'the summary is not the one derived from vitest-pinned.json',
     );
+  });
+});
+
+// --- the repository of the run (PR-15) ---------------------------------------
+
+/**
+ * Evidence whose identity has `identity` merged in, and whose run has `htmlUrl`
+ * when one is given: every hash and binding stays consistent.
+ */
+function repositoryProblems(identity: Record<string, unknown>, htmlUrl?: string): string {
+  const given = parts();
+  Object.assign(given.identity, identity);
+  const evidence = assemble(given);
+  const run = evidence.run as { htmlUrl: string };
+  if (htmlUrl !== undefined) run.htmlUrl = htmlUrl;
+  return problemsOf(evidence);
+}
+
+const RUN_1 = 'https://github.com/NoWitam/Kadrian/actions/runs/1';
+const CI_YML = '.github/workflows/ci.yml';
+const KELVIN = 'K';
+
+describe('the repository of the run: owner and name without case, the workflow and its ref exactly (PR-15)', () => {
+  it.each<[string, Record<string, unknown>, string]>([
+    ['the canonical name everywhere', {}, RUN_1],
+    [
+      'the lower-case name everywhere',
+      {
+        repository: 'nowitam/kadrian',
+        workflowRef: `nowitam/kadrian/${CI_YML}@refs/heads/main`,
+      },
+      'https://github.com/nowitam/kadrian/actions/runs/1',
+    ],
+    [
+      'another letter case in every field',
+      {
+        repository: 'NOWITAM/KaDrIaN',
+        workflowRef: `NoWitam/KADRIAN/${CI_YML}@refs/heads/main`,
+      },
+      'https://github.com/nowitam/Kadrian/actions/runs/1',
+    ],
+    [
+      'the ref of the branch of PR-14',
+      {
+        ref: 'refs/heads/pr-14-ci-repair',
+        workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/pr-14-ci-repair`,
+      },
+      RUN_1,
+    ],
+    [
+      'the real run of PR-14',
+      {
+        runId: 36054995870,
+        ref: 'refs/heads/pr-14-ci-repair',
+        workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/pr-14-ci-repair`,
+      },
+      'https://github.com/NoWitam/Kadrian/actions/runs/36054995870',
+    ],
+    [
+      'a ref that holds an @ on both sides',
+      { ref: 'refs/heads/a@b', workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/a@b` },
+      RUN_1,
+    ],
+  ])('accepts %s', (_, identity, htmlUrl) => {
+    expect(repositoryProblems(identity, htmlUrl)).toBe('');
+  });
+
+  const URL_PROBLEM = 'the run URL is not a run of github.com/NoWitam/Kadrian';
+  it.each([
+    'https://github.com/Other/Kadrian/actions/runs/1',
+    'https://github.com/NoWitam/Kadrion/actions/runs/1',
+    'https://github.com/NoWitam/kadrian-fork/actions/runs/1',
+    'https://github.com/ANoWitam/Kadrian/actions/runs/1',
+    `https://github.com/NoWitam/${KELVIN}adrian/actions/runs/1`,
+    'https://www.github.com/NoWitam/Kadrian/actions/runs/1',
+    'http://github.com/NoWitam/Kadrian/actions/runs/1',
+    'https://github.com.evil.example/NoWitam/Kadrian/actions/runs/1',
+    'https://GitHub.com/NoWitam/Kadrian/actions/runs/1',
+    'https://github.com/NoWitam/Kadrian/extra/actions/runs/1',
+  ])('refuses the run URL %s', (htmlUrl) => {
+    expect(repositoryProblems({}, htmlUrl)).toContain(URL_PROBLEM);
+  });
+
+  it.each([
+    ['another run', 'https://github.com/NoWitam/Kadrian/actions/runs/2'],
+    ['the same number written 01', 'https://github.com/NoWitam/Kadrian/actions/runs/01'],
+  ])("refuses a run ID other than the identity's: %s", (_, htmlUrl) => {
+    const problems = repositoryProblems({}, htmlUrl);
+    expect(problems).toContain("the identity's runId is not the run's");
+    expect(problems).not.toContain(URL_PROBLEM);
+  });
+
+  it.each([
+    'Other/Kadrian',
+    'NoWitam/Kadrion',
+    'NoWitam/kadrian-fork',
+    'ANoWitam/Kadrian',
+    'NoWitam',
+    'NoWitam/Kadrian/x',
+    `NoWitam/${KELVIN}adrian`,
+    ' NoWitam/Kadrian',
+    'NoWitam/Kadrian ',
+    'NoWitam/Kadrian\n',
+    '',
+    undefined,
+    42,
+  ])('refuses the repository %j', (repository) => {
+    expect(repositoryProblems({ repository }, RUN_1)).toContain(
+      "the identity's repository is not NoWitam/Kadrian",
+    );
+  });
+
+  const WORKFLOW_PROBLEM = "the identity's workflowRef is not this repository's ci.yml";
+  it.each([
+    `Other/Kadrian/${CI_YML}@refs/heads/main`,
+    `NoWitam/Kadrion/${CI_YML}@refs/heads/main`,
+    `NoWitam/${KELVIN}adrian/${CI_YML}@refs/heads/main`,
+    'NoWitam/Kadrian/.github/workflows/CI.yml@refs/heads/main',
+    'NoWitam/Kadrian/.github/workflows/other.yml@refs/heads/main',
+    'NoWitam/Kadrian/.GitHub/workflows/ci.yml@refs/heads/main',
+    `NoWitam/Kadrian/sub/${CI_YML}@refs/heads/main`,
+    `NoWitam/Kadrian/${CI_YML}`,
+    ` NoWitam/Kadrian/${CI_YML}@refs/heads/main`,
+    `@refs/heads/main`,
+    '',
+    undefined,
+    42,
+  ])('refuses the workflowRef %j', (workflowRef) => {
+    expect(repositoryProblems({ workflowRef }, RUN_1)).toContain(WORKFLOW_PROBLEM);
+  });
+
+  const REF_PROBLEM = "the identity's workflowRef names another ref than the identity's ref";
+  const NO_REF = "the identity's workflowRef names no ref";
+  it.each<[string, Record<string, unknown>, string]>([
+    ['another ref', { workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/other` }, REF_PROBLEM],
+    [
+      'a ref that differs only in letter case',
+      { workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/MAIN` },
+      REF_PROBLEM,
+    ],
+    [
+      'a trailing space in the workflowRef',
+      { workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/main ` },
+      REF_PROBLEM,
+    ],
+    [
+      'a leading space in the workflowRef',
+      { workflowRef: `NoWitam/Kadrian/${CI_YML}@ refs/heads/main` },
+      REF_PROBLEM,
+    ],
+    ["a trailing space in the identity's ref", { ref: 'refs/heads/main ' }, REF_PROBLEM],
+    [
+      'a second @ after the ref',
+      { workflowRef: `NoWitam/Kadrian/${CI_YML}@refs/heads/main@evil` },
+      REF_PROBLEM,
+    ],
+    ['an empty ref after the @', { workflowRef: `NoWitam/Kadrian/${CI_YML}@` }, NO_REF],
+    ['an empty ref on both sides', { ref: '', workflowRef: `NoWitam/Kadrian/${CI_YML}@` }, NO_REF],
+  ])('refuses %s', (_, identity, problem) => {
+    const problems = repositoryProblems(identity, RUN_1);
+    expect(problems).toContain(problem);
+    expect(problems).not.toContain(WORKFLOW_PROBLEM);
+  });
+
+  it('compares owner and repository only, as ASCII segments, without case', () => {
+    expect(sameRepository('NoWitam/Kadrian')).toBe(true);
+    expect(sameRepository('nowitam/kadrian')).toBe(true);
+    expect(sameRepository('NOWITAM/KADRIAN')).toBe(true);
+    for (const name of [
+      'NoWitam/Kadrion',
+      'Other/Kadrian',
+      'NoWitam',
+      'NoWitam/Kadrian/x',
+      '/Kadrian',
+      'NoWitam/',
+      `NoWitam/${KELVIN}adrian`,
+      42,
+      undefined,
+    ]) {
+      expect(sameRepository(name), String(name)).toBe(false);
+    }
+  });
+
+  it('finds a run of this repository in a text, in the old and the new letter case', () => {
+    expect(
+      namesRunOfRepository('run https://github.com/NoWitam/kadrian/actions/runs/36009291627 (a)'),
+    ).toBe(true);
+    expect(namesRunOfRepository('run https://github.com/NoWitam/Kadrian/actions/runs/1.')).toBe(
+      true,
+    );
+    for (const text of [
+      'https://github.com/Other/Kadrian/actions/runs/1',
+      'https://github.com/NoWitam/Kadrion/actions/runs/1',
+      'https://www.github.com/NoWitam/Kadrian/actions/runs/1',
+      'no run here',
+    ]) {
+      expect(namesRunOfRepository(text), text).toBe(false);
+    }
   });
 });

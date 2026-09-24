@@ -225,35 +225,35 @@ Still open:
 
 ## 7. Open questions of §11
 
-| #   | Status after the spike                                                                                                                                |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Decided by D13                                                                                                                                        |
-| Q2  | Answered, D29.5                                                                                                                                       |
-| Q3  | Answered, D26 and D28                                                                                                                                 |
-| Q4  | Answered, D29.1–29.2                                                                                                                                  |
-| Q5  | Answered, D27                                                                                                                                         |
-| Q6  | Decided by D14                                                                                                                                        |
-| Q7  | Answered, D29.6                                                                                                                                       |
-| Q8  | Answered by measurement: no LFS                                                                                                                       |
-| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                                         |
-| Q10 | Decided by D15                                                                                                                                        |
-| Q11 | Decided by D16                                                                                                                                        |
-| Q12 | Decided by D21                                                                                                                                        |
-| Q13 | Decided by D16                                                                                                                                        |
-| Q14 | **Open**: the first run of the workflow failed at `Pinned FFmpeg`, and PR-14 fixes its cause; no run has passed (section 9); see docs/ci/first-run.md |
-| Q15 | Decided by D20                                                                                                                                        |
-| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                                    |
-| Q17 | Answered: `ValidatedComposition`                                                                                                                      |
+| #   | Status after the spike                                                                                                                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q1  | Decided by D13                                                                                                                                                                                                                                                     |
+| Q2  | Answered, D29.5                                                                                                                                                                                                                                                    |
+| Q3  | Answered, D26 and D28                                                                                                                                                                                                                                              |
+| Q4  | Answered, D29.1–29.2                                                                                                                                                                                                                                               |
+| Q5  | Answered, D27                                                                                                                                                                                                                                                      |
+| Q6  | Decided by D14                                                                                                                                                                                                                                                     |
+| Q7  | Answered, D29.6                                                                                                                                                                                                                                                    |
+| Q8  | Answered by measurement: no LFS                                                                                                                                                                                                                                    |
+| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                                                                                                                                                      |
+| Q10 | Decided by D15                                                                                                                                                                                                                                                     |
+| Q11 | Decided by D16                                                                                                                                                                                                                                                     |
+| Q12 | Decided by D21                                                                                                                                                                                                                                                     |
+| Q13 | Decided by D16                                                                                                                                                                                                                                                     |
+| Q14 | **Open**: the first run failed at `Pinned FFmpeg`; the run of PR-14 passed, and its artifact met every criterion except the letter case of the repository name, which PR-15 fixes; Q14 needs a green run of the PR-15 commit (section 9); see docs/ci/first-run.md |
+| Q15 | Decided by D20                                                                                                                                                                                                                                                     |
+| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                                                                                                                                                 |
+| Q17 | Answered: `ValidatedComposition`                                                                                                                                                                                                                                   |
 
 ## 8. Recommended next phase
 
 The first phase after the spike should keep the engine narrow and harden what
 the spike proved, rather than widen it:
 
-1. **Run CI to green (Q14).** The owner pushed on 2026-09-24, and the first run
-   failed while installing FFmpeg (section 9). The run after PR-14 is the next
-   chance of the first evidence that the gates hold outside the development
-   machine (docs/ci/first-run.md).
+1. **Close Q14 on a green run.** The first run failed while installing FFmpeg,
+   and the run of PR-14 passed (section 9). A green run of the PR-15 commit,
+   with its own artifact, is the evidence that can close Q14
+   (docs/ci/first-run.md).
 2. **Implement D36** (section 5): the host opt-in for Custom HTML in the
    Player, and no untrusted Custom HTML in the interactive preview by default.
    The decision was accepted on 2026-09-24, and its code comes in a pull
@@ -265,18 +265,25 @@ the spike proved, rather than widen it:
 Taskio integration, a timeline UI, and a language model stay outside the next
 phase until these hold.
 
-## 9. CI status after PR-14 (Q14)
+## 9. CI status after PR-15 (Q14)
 
-**Q14 is open.** On 2026-09-24:
+**Q14 is open.** On 2026-09-25:
 
-- The first push was made: commit `3ddd29d05be2938aabd996701abf9575f219ed33`
-  on `main`.
-- Its run https://github.com/NoWitam/kadrian/actions/runs/36009291627
-  (attempt 1, event `push`) failed at the step `Pinned FFmpeg`. The pinned
-  browser and export tests were skipped, and the steps `Pinned test summary`
-  and `CI identity` failed.
-- No `kadrion-reports` artifact from CI exists: the step `Reports` found no
-  `.kadrion-out/` directory to upload.
+- The first run, https://github.com/NoWitam/kadrian/actions/runs/36009291627
+  (commit `3ddd29d05be2938aabd996701abf9575f219ed33`, attempt 1, event `push`)
+  failed at the step `Pinned FFmpeg`. The pinned browser and export tests were
+  skipped, the steps `Pinned test summary` and `CI identity` failed, and it
+  left no artifact.
+- PR-14 was committed as `a58ffc335283d2ad64078cabc4757dbc645a57c0` on the
+  branch `pr-14-ci-repair`. Its run
+  https://github.com/NoWitam/Kadrian/actions/runs/36054995870 (attempt 1,
+  event `push`) passed every step.
+- Its `kadrion-reports` artifact exists and was checked on 2026-09-25. It met
+  every machine-checkable criterion except the letter case of the repository
+  name, which PR-15 fixes in the validator.
+- That run confirms PR-14, but it cannot close Q14 for the commit of PR-15. A
+  new green run of that commit, with its own artifact, is required.
+- No evidence file exists.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
 
@@ -285,7 +292,7 @@ decompress the FFmpeg archive. PR-14 decompresses with `xz` where it runs and
 with `python3` and `lzma` otherwise, extracts with `--no-same-owner` into a
 staging directory, and publishes only verified binaries. In GitHub Actions, a
 failing stage now leaves a diagnostic in `.kadrion-out/diagnostics/`, which is
-never evidence. No run of the fixed workflow has happened yet.
+never evidence. The run of PR-14 showed the fix working on a GitHub runner.
 
 PR-13 prepared the evidence that a run produces:
 

@@ -1,10 +1,11 @@
-# CI in the pinned render environment (D26.6). UNVERIFIED: no run has passed.
+# CI in the pinned render environment (D26.6). UNVERIFIED until Q14 closes.
 # Its first run (36009291627, commit 3ddd29d, attempt 1) failed at Pinned FFmpeg.
 # The run's logs were not read; the cause was reproduced: the image has no xz.
-# PR-14 fixed the install. The first green run is the first evidence that it
-# works (Q14 stays open until then, see docs/ci/first-run.md). Since PR-14 the
-# refusals of ffmpeg:fetch, the summary, and the identity leave
-# .kadrion-out/diagnostics/<stage>.json, which is never evidence.
+# PR-14 fixed the install, and its run 36054995870 (commit a58ffc3) passed. Q14
+# closes only on a green run of the reviewed commit and its own artifact (see
+# docs/ci/first-run.md). Since PR-14 the refusals of ffmpeg:fetch, the summary,
+# and the identity leave .kadrion-out/diagnostics/<stage>.json, which is never
+# evidence.
 # This job has a network, so it is not the reference run of D28.9: golden frames
 # come only from tests/pinned/container/pinned-run.sh with --network none, and
 # the WebRTC checks here report instead of asserting. The parity gate of D34

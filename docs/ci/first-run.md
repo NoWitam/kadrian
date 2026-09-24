@@ -1,28 +1,36 @@
 # The first CI run (Q14)
 
-`.github/workflows/ci.yml` (D26.6) has **never passed**. Its first run failed
-(below). Q14 stays open until a run on a remote GitHub runner has met every
-criterion below. A local run of the same commands, including
-`tests/pinned/container/pinned-run.sh`, does **not** verify CI.
+`.github/workflows/ci.yml` (D26.6) failed on its first run and passed on the run
+of PR-14 (below). Q14 stays open until a run of the reviewed commit on a remote
+GitHub runner has met every criterion below. A local run of the same commands,
+including `tests/pinned/container/pinned-run.sh`, does **not** verify CI.
 
-## Status after PR-14 (2026-09-24)
+## Status after PR-15 (2026-09-25)
 
 **Status: Q14 is open.**
 
-- The first push was made: commit `3ddd29d05be2938aabd996701abf9575f219ed33`
-  on `main`.
-- Its run https://github.com/NoWitam/kadrian/actions/runs/36009291627
-  (attempt 1, event `push`) failed at the step `Pinned FFmpeg`.
-- The pinned browser and export tests were skipped. The steps
-  `Pinned test summary` and `CI identity` failed, because nothing they need
-  existed.
-- No `kadrion-reports` artifact from CI exists: the step `Reports` found no
-  `.kadrion-out/` directory to upload.
+- The first run, https://github.com/NoWitam/kadrian/actions/runs/36009291627
+  (commit `3ddd29d05be2938aabd996701abf9575f219ed33`, attempt 1, event `push`)
+  failed at the step `Pinned FFmpeg`: the pinned tests were skipped, and it
+  left no artifact.
+- PR-14 was committed as `a58ffc335283d2ad64078cabc4757dbc645a57c0` on the
+  branch `pr-14-ci-repair`. Its run
+  https://github.com/NoWitam/Kadrian/actions/runs/36054995870 (attempt 1,
+  event `push`) passed every step.
+- Its `kadrion-reports` artifact (id `10832915218`, digest
+  `sha256:f95ae9e24e3988716f967898fb37827af25d9033e65337d12ac081b873f744db`)
+  exists and was checked on 2026-09-25. It met every machine-checkable
+  criterion except the letter case of the repository name (`NoWitam/Kadrian`,
+  renamed from `NoWitam/kadrian`), which PR-15 fixes in the validator.
+- That run confirms PR-14, but it cannot close Q14 for the commit of PR-15. A
+  new green run of that commit, with its own artifact, is required.
+- No evidence file exists: `docs/ci/q14-evidence.json` is written only from
+  that new run and its artifact.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
 
-PR-14 fixes the cause of that failure (below). No run of the fixed workflow has
-happened yet, and PR-14 created no evidence.
+PR-14 fixed the cause of the first failure (below), and PR-15 fixed the letter
+case of the repository name in the Q14 validator.
 
 ## The first run and its cause (PR-14)
 
@@ -169,11 +177,13 @@ itself.
 
 ## Pushing (the owner)
 
-The owner made the first push on 2026-09-24 (`3ddd29d`). For the next one:
+The owner made the first push on 2026-09-24 (`3ddd29d`). PR-14 was committed
+as `a58ffc3` and pushed on the branch `pr-14-ci-repair`. For every push:
 
-1. Review the local changes of PR-14 and commit them yourself. Nothing in this
+1. Every commit and push needs the owner's approval. Nothing in this
    repository commits or pushes on its own.
-2. Push to `origin` (`github.com/NoWitam/kadrian`). A branch plus a pull
+2. Push to `origin` (`github.com/NoWitam/Kadrian`; the repository was renamed
+   from `NoWitam/kadrian`, and GitHub redirects the old name). A branch plus a pull
    request runs the workflow twice (`push` and `pull_request`). A push to
    `main` runs it once.
 3. The job needs no secret.
@@ -217,6 +227,17 @@ The machine checks, per criterion:
     not the reviewed one.
   - The identity's commit, run ID, attempt, event, repository, and workflow
     ref must be the run's.
+  - The repository is `NoWitam/Kadrian`. Only its owner and name are compared
+    without case, as GitHub does (PR-15): `nowitam/kadrian` is the same
+    repository, and any other owner or name is refused. The run URL must be on
+    `https://github.com` with exactly the identity's run ID.
+  - `workflowRef` must be `<owner>/<repository>/.github/workflows/ci.yml@<ref>`:
+    the workflow path exactly, and the ref after the first `@` exactly the
+    identity's `ref` (for a push, `refs/heads/<branch>`), with the same letter
+    case, not trimmed, and not empty. Both come from the identity the run
+    wrote; the evidence holds no branch from the GitHub API to compare them
+    with, so whether the ref is the reviewed branch is left to the owner's
+    review.
   - Its workflow hash must be that of the committed `ci.yml`.
 - **(3) — nothing skipped.**
   - Every step, the job, and the run are `success`.
@@ -264,7 +285,8 @@ the evidence; a different number on the development machine and in the pinned
 container, which runs the same image as CI, is investigated, never rounded
 away.
 
-No evidence file exists while no run has passed, and none may be made up.
+No evidence file exists until a green run of the reviewed commit and its own
+artifact have been checked, and none may be made up.
 
 ## If a gate fails on the runner: analysis first (owner, 2026-09-24)
 
