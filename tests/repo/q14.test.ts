@@ -9,12 +9,12 @@
  * statement that Q14 is closed needs
  * `docs/ci/q14-evidence.json`, which must pass `q14EvidenceProblems` — every
  * criterion a machine can check — and the §11 row must name its run and
- * commit. While Q14 is open, the report, the first-run notes, and the §11 row
- * name a run of this repository, its commit and attempt, and how it ended, and
- * they say that no evidence file exists. A diagnostic of a failed stage is
- * never evidence, not even under the name of a report it would stand in for.
- * No evidence file exists for the
- * current state, and none is made up here: the validator is tested on
+ * commit. The evidence file exists exactly when Q14 is closed; it is complete
+ * and consistent (`q14EvidenceFileProblems`), and every place that states the
+ * status names its run, its commit, the file, and the artifact. A diagnostic
+ * of a failed stage is never evidence, not even under the name of a report it
+ * would stand in for. The evidence file was written from a real run and its
+ * artifact (2026-09-25); the validator and the file checks are tested on
  * synthetic evidence built in this file.
  */
 import { createHash } from 'node:crypto';
@@ -29,7 +29,10 @@ import { REQUIRED_PINNED_FILES, summarizeVitestReport } from '../ci/pinned-summa
 import type { GoldenManifest } from '../parity/parity.js';
 
 import {
+  ARTIFACT_FILES,
+  criteriaOf,
   namesRunOfRepository,
+  q14EvidenceFileProblems,
   q14EvidenceProblems,
   requiredSteps,
   sameRepository,
@@ -98,6 +101,7 @@ const spec = readText('docs', 'spike', 'vertical-spike.md');
 const report = readText('docs', 'spike', 'report.md');
 const firstRun = readText('docs', 'ci', 'first-run.md');
 const workflow = readText('.github', 'workflows', 'ci.yml');
+const readme = readText('README.md');
 const context = {
   workflow,
   golden: {
@@ -129,14 +133,36 @@ describe('the status of Q14', () => {
     expect(statements.map(([, text]) => claimsClosed(text))).toEqual(statements.map(() => closed));
   });
 
+  it('is stated the same way in the README', () => {
+    expect(/Q14\s+is\s+closed/.test(readme), 'README.md').toBe(closed);
+    if (closed) expect(readme).not.toMatch(/Q14\s+(is|stays)\s+open/);
+  });
+
+  it('has an evidence file exactly when it is closed', () => {
+    expect(evidenceExists, 'docs/ci/q14-evidence.json').toBe(closed);
+  });
+
   it('is closed only with evidence that passes every machine-checkable criterion', () => {
     if (!closed) return;
-    expect(evidenceExists, 'docs/ci/q14-evidence.json').toBe(true);
     const evidence = readJson(...EVIDENCE) as Q14Evidence;
     expect(q14EvidenceProblems(evidence, context)).toEqual([]);
-    const row = rowOf(spec, 'Q14');
-    expect(row).toContain(evidence.run.htmlUrl);
-    expect(row).toContain(evidence.run.headSha);
+    // Every place that states the status names the run and the validated commit.
+    const places: [string, string][] = [
+      ['§11 Q14 row', rowOf(spec, 'Q14')],
+      ['report §9', section(report, '9. CI status')],
+      ['first-run.md status', statusSection(firstRun)],
+    ];
+    for (const [place, text] of places) {
+      expect(text, place).toContain(evidence.run.htmlUrl);
+      expect(text, place).toContain(evidence.run.headSha);
+      expect(text, place).toContain('docs/ci/q14-evidence.json');
+      expect(text, place).toContain(String(evidence.artifact.id));
+    }
+    for (const text of [section(report, '9. CI status'), statusSection(firstRun)]) {
+      expect(text).toMatch(/do not replace a run on a\s+GitHub runner/);
+    }
+    // The README names the same evidence.
+    expect(readme).toContain('docs/ci/q14-evidence.json');
   });
 
   it('never keeps an evidence file that does not pass', () => {
@@ -144,29 +170,10 @@ describe('the status of Q14', () => {
     expect(q14EvidenceProblems(readJson(...EVIDENCE), context)).toEqual([]);
   });
 
-  it('while open, names a run of this repository, its commit and how it ended, and that no evidence file exists', () => {
-    if (closed) return;
-    // What the docs say about the evidence file is also true of the repository.
-    expect(evidenceExists, 'docs/ci/q14-evidence.json exists while Q14 is open').toBe(false);
-    const commit = /`?\b[0-9a-f]{40}\b`?/;
-    // How a named run ended: it failed at a step, or it passed every step.
-    const outcome =
-      /attempt \d+,\s+event `push`\)\s+(?:failed at the step `[^`]+`|passed every step)/;
-    // The sections that state the status, not the whole files: a sentence
-    // elsewhere (the Q14 row) must not stand in for one of these.
-    for (const text of [section(report, '9. CI status'), statusSection(firstRun)]) {
-      expect(namesRunOfRepository(text), text).toBe(true);
-      expect(text).toMatch(commit);
-      expect(text).toMatch(outcome);
-      expect(text).toMatch(/No evidence file exists/);
-      expect(text).toMatch(/do not replace a run on a\s+GitHub runner/);
-    }
-    // The §11 row says the same in its own words.
-    const row = rowOf(spec, 'Q14');
-    expect(namesRunOfRepository(row), row).toBe(true);
-    expect(row).toMatch(commit);
-    expect(row).toMatch(/attempt \d+\) (?:failed at|passed every step)/);
-    expect(row).toMatch(/no evidence file exists/);
+  it('keeps the evidence file complete and consistent', () => {
+    if (!evidenceExists) return;
+    expect(criteriaOf(firstRun)).toHaveLength(8);
+    expect(q14EvidenceFileProblems(readJson(...EVIDENCE), criteriaOf(firstRun))).toEqual([]);
   });
 });
 
@@ -976,5 +983,251 @@ describe('the repository of the run: owner and name without case, the workflow a
     ]) {
       expect(namesRunOfRepository(text), text).toBe(false);
     }
+  });
+});
+
+// --- the evidence file: complete and consistent (closing Q14) -----------------
+
+const CRITERIA = criteriaOf(firstRun);
+
+type EvidenceFile = Draft & { verification: Record<string, unknown> };
+
+/** Synthetic evidence as the file holds it: the validator's parts and a verification record. */
+function evidenceFile(): EvidenceFile {
+  const evidence = structuredClone(assemble(parts())) as unknown as Draft;
+  const listed = evidence.artifact.files;
+  evidence.artifact.files = ARTIFACT_FILES.map(
+    (path) =>
+      listed.find((file) => file.path === path) ?? { path, sha256: `sha256:${'e'.repeat(64)}` },
+  );
+  const digest = evidence.artifact.digest as string;
+  evidence.artifact.zipSha256 = digest;
+  const verification = {
+    validatedCommit: HEAD,
+    runId: 1,
+    runAttempt: 1,
+    runUrl: RUN_1,
+    event: 'push',
+    artifactId: 7,
+    zipSha256: digest,
+    validator: `tests/repo/q14-evidence.ts at ${HEAD}`,
+    verifiedOn: '2026-10-01',
+    problems: [],
+    criteria: CRITERIA.map((criterion, at) => ({
+      id: at + 1,
+      criterion,
+      result: 'pass',
+      detail: 'what showed it',
+    })),
+    closingCommit: `A later documentation commit; the evidence is of ${HEAD}.`,
+    ownerReview: { reviewedCode: 'confirmed', download: 'checked', customHtml: 'reviewed' },
+  };
+  return Object.assign(evidence, { verification });
+}
+
+function criterionOf(file: EvidenceFile, at: number): Record<string, unknown> {
+  return (file.verification.criteria as Record<string, unknown>[])[at] as Record<string, unknown>;
+}
+
+describe('the evidence file: complete and consistent', () => {
+  it('reads the eight criteria of the owner from first-run.md, word for word', () => {
+    expect(CRITERIA).toHaveLength(8);
+    expect(CRITERIA[0]).toBe('The URL of the GitHub Actions run.');
+    expect(CRITERIA[7]).toBe('The golden-frame gate of D26.5 passed too.');
+    expect(criteriaOf('no such section')).toEqual([]);
+  });
+
+  it('reads a wrapped criterion whole, and no criteria from a list numbered otherwise', () => {
+    const heading = '\n## When Q14 may close\n\n';
+    expect(criteriaOf(`${heading}1. One\n   continued.\n2. Two.\n\n## Next\n3. Three.`)).toEqual([
+      'One continued.',
+      'Two.',
+    ]);
+    expect(criteriaOf(`${heading}1. One.\n3. Three.\n`)).toEqual([]);
+    expect(criteriaOf(`${heading}2. Two.\n3. Three.\n`)).toEqual([]);
+  });
+
+  it('accepts a complete and consistent file (the premise of every refusal below)', () => {
+    const file = evidenceFile();
+    expect(q14EvidenceProblems(file, context)).toEqual([]);
+    expect(q14EvidenceFileProblems(file, CRITERIA)).toEqual([]);
+  });
+
+  it.each<[string, (file: EvidenceFile) => void, string]>([
+    ['an extra top-level key', (file) => (file.notes = 'x'), 'other keys than its format'],
+    [
+      'an extra carried text',
+      (file) => (file.contents['custom-html-netlog.json'] = '{}'),
+      'other texts than the six',
+    ],
+    [
+      'a missing carried text',
+      (file) => delete file.contents['export-report.json'],
+      'other texts than the six',
+    ],
+    [
+      'a ZIP hash other than the API digest',
+      (file) => (file.artifact.zipSha256 = `sha256:${'b'.repeat(64)}`),
+      "the ZIP's SHA-256 is not the artifact's API digest",
+    ],
+    [
+      'a recorded step that was skipped',
+      (file) => file.steps.push({ name: 'Post Run actions/checkout', conclusion: 'skipped' }),
+      'a recorded step did not conclude success',
+    ],
+    ['no steps', (file) => file.steps.splice(0), 'a recorded step did not conclude success'],
+    [
+      'a step that is not an object',
+      (file) => (file.steps as unknown[]).push(null),
+      'a recorded step did not conclude success',
+    ],
+    [
+      'a file entry that is not an object',
+      (file) => (file.artifact.files as unknown[]).push(null),
+      'other files than the pinned run writes',
+    ],
+    [
+      'a file of the pinned run left out',
+      (file) => file.artifact.files.splice(1, 1),
+      'other files than the pinned run writes',
+    ],
+    [
+      'an extra file',
+      (file) =>
+        file.artifact.files.push({ path: 'extra.json', sha256: `sha256:${'e'.repeat(64)}` }),
+      'other files than the pinned run writes',
+    ],
+    [
+      'no verification record',
+      (file) => delete (file as Partial<EvidenceFile>).verification,
+      'no verification record',
+    ],
+    [
+      'an extra key in the record',
+      (file) => (file.verification.note = 'x'),
+      'the verification record has other keys than its format',
+    ],
+    [
+      'another validated commit',
+      (file) => (file.verification.validatedCommit = 'f'.repeat(40)),
+      "the verification's validatedCommit is not the evidence's",
+    ],
+    [
+      'another run ID',
+      (file) => (file.verification.runId = 2),
+      "the verification's runId is not the evidence's",
+    ],
+    [
+      'the run ID as text',
+      (file) => (file.verification.runId = '1'),
+      "the verification's runId is not the evidence's",
+    ],
+    [
+      'another attempt',
+      (file) => (file.verification.runAttempt = 2),
+      "the verification's runAttempt is not the evidence's",
+    ],
+    [
+      'another run URL',
+      (file) => (file.verification.runUrl = 'https://github.com/NoWitam/Kadrian/actions/runs/2'),
+      "the verification's runUrl is not the evidence's",
+    ],
+    [
+      'another event',
+      (file) => (file.verification.event = 'pull_request'),
+      "the verification's event is not the evidence's",
+    ],
+    [
+      'another artifact',
+      (file) => (file.verification.artifactId = 8),
+      "the verification's artifactId is not the evidence's",
+    ],
+    [
+      'another ZIP hash',
+      (file) => (file.verification.zipSha256 = `sha256:${'c'.repeat(64)}`),
+      "the verification's zipSha256 is not the evidence's",
+    ],
+    [
+      'recorded problems',
+      (file) => (file.verification.problems = ['something']),
+      'the verification records problems',
+    ],
+    [
+      'a validator of another commit',
+      (file) => (file.verification.validator = 'tests/repo/q14-evidence.ts at main'),
+      "the verification's validator does not name the validated commit",
+    ],
+    [
+      'a closing note without the validated commit',
+      (file) => (file.verification.closingCommit = 'A later commit.'),
+      "the verification's closingCommit does not name the validated commit",
+    ],
+    [
+      'no date',
+      (file) => (file.verification.verifiedOn = 'today'),
+      "the verification's verifiedOn is not a date",
+    ],
+    [
+      'an owner review without the download',
+      (file) => (file.verification.ownerReview = { reviewedCode: 'x', customHtml: 'z' }),
+      "the verification's ownerReview is incomplete",
+    ],
+    [
+      'an empty owner review entry',
+      (file) =>
+        (file.verification.ownerReview = { reviewedCode: '', download: 'y', customHtml: 'z' }),
+      "the verification's ownerReview is incomplete",
+    ],
+    [
+      'seven criteria',
+      (file) => (file.verification.criteria as unknown[]).pop(),
+      'the verification does not record the eight criteria',
+    ],
+    [
+      'a criterion in other words',
+      (file) => (criterionOf(file, 2).criterion = 'All steps are fine.'),
+      "criterion 3 of the verification is not the owner's, passed",
+    ],
+    [
+      'a criterion that failed',
+      (file) => (criterionOf(file, 4).result = 'fail'),
+      "criterion 5 of the verification is not the owner's, passed",
+    ],
+    [
+      'criteria out of order',
+      (file) => (file.verification.criteria as unknown[]).reverse(),
+      "criterion 1 of the verification is not the owner's, passed",
+    ],
+    [
+      'a criterion that is not an object',
+      (file) => ((file.verification.criteria as unknown[])[5] = null),
+      "criterion 6 of the verification is not the owner's, passed",
+    ],
+    [
+      'a criterion under another number',
+      (file) => (criterionOf(file, 0).id = 2),
+      "criterion 1 of the verification is not the owner's, passed",
+    ],
+    [
+      'a criterion without a detail',
+      (file) => (criterionOf(file, 7).detail = ''),
+      "criterion 8 of the verification is not the owner's, passed",
+    ],
+  ])('refuses %s', (_, edit, problem) => {
+    const file = evidenceFile();
+    edit(file);
+    expect(q14EvidenceFileProblems(file, CRITERIA).join(' | ')).toContain(problem);
+  });
+
+  it('refuses a record checked against other than the eight criteria of the docs', () => {
+    expect(q14EvidenceFileProblems(evidenceFile(), CRITERIA.slice(0, 7)).join(' | ')).toContain(
+      'the verification does not record the eight criteria',
+    );
+    // Seven in the docs and seven in the record agree with each other, and are still refused.
+    const seven = evidenceFile();
+    (seven.verification.criteria as unknown[]).pop();
+    expect(q14EvidenceFileProblems(seven, CRITERIA.slice(0, 7)).join(' | ')).toContain(
+      'the verification does not record the eight criteria',
+    );
   });
 });

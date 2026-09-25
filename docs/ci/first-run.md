@@ -1,36 +1,105 @@
 # The first CI run (Q14)
 
-`.github/workflows/ci.yml` (D26.6) failed on its first run and passed on the run
-of PR-14 (below). Q14 stays open until a run of the reviewed commit on a remote
-GitHub runner has met every criterion below. A local run of the same commands,
-including `tests/pinned/container/pinned-run.sh`, does **not** verify CI.
+`.github/workflows/ci.yml` (D26.6) failed on its first run, passed on the run of
+PR-14, and passed on the run of PR-15, whose evidence closes Q14 (below). A local
+run of the same commands, including `tests/pinned/container/pinned-run.sh`, does
+**not** verify CI.
 
-## Status after PR-15 (2026-09-25)
+## Status after the Q14 evidence (2026-09-25)
 
-**Status: Q14 is open.**
+**Status: Q14 is closed.**
 
+- The evidence is `docs/ci/q14-evidence.json`. It is of the run
+  https://github.com/NoWitam/Kadrian/actions/runs/36072703155 (run ID
+  `36072703155`, attempt 1, event `push`) of the validated commit
+  `4f4d4675c09d73d33916885961d1568f73a36c80` (PR-15, branch
+  `pr-15-q14-repository-identity`), which passed every step.
+- The owner downloaded its `kadrion-reports` artifact `10838699659` from GitHub
+  by hand and gave the path of the ZIP. The SHA-256 of the ZIP was
+  computed during the verification and equals the digest the GitHub API
+  publishes,
+  `sha256:d04ad86263ee7df3c8e7ab6949ab00fb272afab99c96a02016e66cc6031636e9`.
+- The validator of that commit found no problem, and each of the eight
+  criteria below passed. The evidence records the result of each.
+- The commit that closes Q14 is a later documentation commit that adds the
+  evidence; the evidence is of the validated commit, not of that one.
 - The first run, https://github.com/NoWitam/kadrian/actions/runs/36009291627
-  (commit `3ddd29d05be2938aabd996701abf9575f219ed33`, attempt 1, event `push`)
-  failed at the step `Pinned FFmpeg`: the pinned tests were skipped, and it
-  left no artifact.
+  (commit `3ddd29d05be2938aabd996701abf9575f219ed33`, attempt 1, event `push`,
+  pushed on 2026-09-24), failed at the step `Pinned FFmpeg`: the pinned tests
+  were skipped, and it left no artifact. PR-14 fixed the cause (below).
 - PR-14 was committed as `a58ffc335283d2ad64078cabc4757dbc645a57c0` on the
   branch `pr-14-ci-repair`. Its run
   https://github.com/NoWitam/Kadrian/actions/runs/36054995870 (attempt 1,
-  event `push`) passed every step.
-- Its `kadrion-reports` artifact (id `10832915218`, digest
+  event `push`) passed every step. Its `kadrion-reports` artifact (id
+  `10832915218`, digest
   `sha256:f95ae9e24e3988716f967898fb37827af25d9033e65337d12ac081b873f744db`)
-  exists and was checked on 2026-09-25. It met every machine-checkable
-  criterion except the letter case of the repository name (`NoWitam/Kadrian`,
-  renamed from `NoWitam/kadrian`), which PR-15 fixes in the validator.
-- That run confirms PR-14, but it cannot close Q14 for the commit of PR-15. A
-  new green run of that commit, with its own artifact, is required.
-- No evidence file exists: `docs/ci/q14-evidence.json` is written only from
-  that new run and its artifact.
+  was checked on 2026-09-25. It met every machine-checkable criterion except
+  the letter case of the repository name (`NoWitam/Kadrian`, renamed from
+  `NoWitam/kadrian`), which PR-15 fixed in the validator. That run confirmed
+  PR-14 but could not close Q14 for the commit of PR-15.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
 
-PR-14 fixed the cause of the first failure (below), and PR-15 fixed the letter
-case of the repository name in the Q14 validator.
+## What "Q14 is closed" means (2026-09-25)
+
+- One push run of the reviewed commit on a GitHub runner, in the pinned image,
+  met all eight criteria below, and the evidence of that run is in the
+  repository and passes the validator in every `check`.
+- It proves the gates on that runner for that commit. It is not a promise that
+  every later run is green: a later red run is a regression to analyse, as
+  below, not a reason to rewrite the evidence.
+- The evidence stays valid only while what it is checked against is unchanged:
+  `.github/workflows/ci.yml` byte for byte (its SHA-256 is in the identity,
+  and that is why its header comment still reads "UNVERIFIED until Q14
+  closes."), the golden-frame manifest and timestamps, the pinned image, the
+  FFmpeg pins, the thresholds of D34, the seven pinned test files, the step
+  names, the repository name, and the reports the identity binds. A change to
+  any of them fails `check`.
+- Such a change, even one to the header comment of `ci.yml`, therefore reopens
+  Q14 in the same commit. The CI step `Check` runs `check`, so a commit that
+  changes one of them while this evidence stays fails at `Check` and can never
+  be the green run of new evidence. Q14 closes again only when a later
+  documentation commit adds the evidence of a green run of that commit, as
+  this one did.
+- It does not decide anything the owner reviews by hand (below), and it does
+  not implement D36.
+
+Reopening Q14, in the commit that makes such a change:
+
+- Delete `docs/ci/q14-evidence.json`.
+- Mark Q14 open in every place that states its status, each with exactly one
+  of the fixed markers of `tests/repo/q14.test.ts` and no other bold phrase
+  there except `**unverified**`: the §11 Q14 row of
+  `docs/spike/vertical-spike.md` (`**Open**`, or `**Still open after PR-N**`),
+  the Q14 row of `docs/spike/report.md` (`**Open**`), the section of this file
+  whose heading begins `## Status after` (`**Status: Q14 is open.**`), and the
+  section of the report whose heading begins `## 9. CI status`
+  (`**Q14 is open.**`). Keep those headings.
+- Remove the words "Q14 is closed" from the README; the guard reads them in
+  plain text, even in a phrase such as "until Q14 is closed".
+- Correct the plain-text statements the guard cannot read: the introduction of
+  this file, the sentence on the eight criteria in "When Q14 may close", this
+  section, section 5 ("Closed since") and item 1 of section 8 of the report,
+  and the status sentence of the README.
+
+What "Q14 is closed" does not mean:
+
+- It is not evidence of the commit that closes Q14. That documentation commit
+  was not the run of the evidence; its own CI run, if any, is not recorded.
+- It does not bind the runtime or the Player build to the repository. The
+  validator compares the runtime hash and the Player's dist tree between the
+  reports of the run, not with the committed parity record; they were compared
+  with that record by hand when the evidence was checked. A change of the
+  runtime or the Player, D36 included, leaves the evidence formally valid, and
+  its parity is shown by the parity record of that change and by the next
+  CI runs, not by this evidence.
+- The files the artifact must hold are a fixed list in the validator; a new
+  report of the pinned run needs that list changed, which fails `check` until
+  Q14 is reopened as above.
+- The `detail` of each criterion in the verification record is a recorded
+  statement of what showed it. The machine checks that each criterion is
+  recorded, in the owner's words, as passed; the facts themselves are checked
+  by `q14EvidenceProblems` on the carried reports.
 
 ## The first run and its cause (PR-14)
 
@@ -191,7 +260,7 @@ as `a58ffc3` and pushed on the branch `pr-14-ci-repair`. For every push:
 ## When Q14 may close (owner, 2026-09-24)
 
 Q14 closes only when **all** of the following exist. In every other case it
-stays open.
+stays open. On 2026-09-25 all eight were met by the run of PR-15 (above).
 
 1. The URL of the GitHub Actions run.
 2. The SHA of a commit that matches the run and the reviewed code.
@@ -218,7 +287,19 @@ The file holds:
   of the downloaded zip, and every file with its SHA-256.
 - **The contents.** The verbatim texts of `ci-identity.json`,
   `vitest-pinned.json`, `pinned-test-summary.json`, `golden-comparison.json`,
-  `parity/parity-measurement.json`, and `export-report.json`.
+  `parity/parity-measurement.json`, and `export-report.json`, and nothing
+  else: not the ZIP, the videos, or the other reports.
+- **The verification (2026-09-25).** A record of the check: the validated
+  commit, run ID, attempt, URL, event, artifact ID, and ZIP hash; the validator
+  and its result; each of the eight criteria in the owner's words, with its
+  result and what showed it; that the closing commit is a later documentation
+  commit; and what stays the owner's review.
+
+`tests/repo/q14.test.ts` also checks that the file is complete and consistent:
+exactly these keys and these six texts; the ZIP hash equal to the API digest;
+every recorded step `success`; the artifact's files those the pinned run
+writes; and a verification record that agrees with the run, the commit, and
+the artifact, names the eight criteria word for word, and has each `pass`.
 
 The machine checks, per criterion:
 
@@ -270,7 +351,8 @@ The machine checks, per criterion:
 
 The rest stays the owner's review:
 
-- that the commit is the reviewed code;
+- that the commit is the reviewed code. Having been reviewed is a fact about
+  people, not about the commit, so no machine check can establish it;
 - that the zip was downloaded from that run and attempt (the API digest and
   the zip hash make this checkable by hand);
 - the Custom HTML findings. The WebRTC checks report only when the run has a
@@ -285,8 +367,8 @@ the evidence; a different number on the development machine and in the pinned
 container, which runs the same image as CI, is investigated, never rounded
 away.
 
-No evidence file exists until a green run of the reviewed commit and its own
-artifact have been checked, and none may be made up.
+The evidence file is written only from a green run of the reviewed commit and
+its own artifact, after they have been checked, and none may be made up.
 
 ## If a gate fails on the runner: analysis first (owner, 2026-09-24)
 

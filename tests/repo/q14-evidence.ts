@@ -407,3 +407,170 @@ export function q14EvidenceProblems(
   }
   return problems;
 }
+
+// --- the evidence file: complete and consistent (closing Q14, 2026-09-25) ---
+
+/** The top-level keys of `docs/ci/q14-evidence.json`, exactly. */
+export const EVIDENCE_KEYS = Object.freeze([
+  'evidenceVersion',
+  'run',
+  'job',
+  'steps',
+  'artifact',
+  'contents',
+  'verification',
+]);
+
+/** The files the pinned run leaves in `.kadrion-out`, which the artifact holds, sorted. */
+export const ARTIFACT_FILES = Object.freeze([
+  'ci-identity.json',
+  'custom-html-netlog.json',
+  'custom-html-probes.json',
+  'export-memory.json',
+  'export-report.json',
+  'exports/video-1080p.mp4',
+  'exports/video-720p.mp4',
+  'golden-comparison.json',
+  'parity/parity-measurement.json',
+  'pinned-test-summary.json',
+  'presentation-barrier.json',
+  'producer-processes.json',
+  'vitest-pinned.json',
+]);
+
+/** The keys of the verification record, exactly. */
+export const VERIFICATION_KEYS = Object.freeze([
+  'validatedCommit',
+  'runId',
+  'runAttempt',
+  'runUrl',
+  'event',
+  'artifactId',
+  'zipSha256',
+  'validator',
+  'verifiedOn',
+  'problems',
+  'criteria',
+  'closingCommit',
+  'ownerReview',
+]);
+
+/**
+ * The eight criteria of the owner, word for word, from the numbered list of
+ * first-run.md: an item wrapped over indented lines is one criterion. A list
+ * numbered other than 1, 2, 3, … yields no criteria.
+ */
+export function criteriaOf(firstRun: string): string[] {
+  const start = firstRun.indexOf('\n## When Q14 may close');
+  const end = firstRun.indexOf('\n## ', start + 1);
+  const list = start < 0 ? '' : firstRun.slice(start, end < 0 ? undefined : end);
+  const items = [...list.matchAll(/^(\d+)\. (.+(?:\n {2,}\S.*)*)$/gm)];
+  if (items.some((match, at) => match[1] !== String(at + 1))) return [];
+  return items.map((match) => (match[2] ?? '').replace(/\n +/g, ' '));
+}
+
+const same = (a: readonly unknown[], b: readonly unknown[]): boolean =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * What keeps `value` from being a complete and consistent evidence file,
+ * beyond `q14EvidenceProblems`: exactly its keys and its six texts, the ZIP
+ * hash equal to the API digest, every recorded step `success`, the files the
+ * pinned run writes, and a verification record that agrees with the run, the
+ * commit, and the artifact and names the eight criteria word for word, each
+ * `pass`. The record states what was checked; it proves nothing on its own.
+ */
+export function q14EvidenceFileProblems(value: unknown, criteria: readonly string[]): string[] {
+  const evidence = value as
+    (Partial<Q14Evidence> & { verification?: Record<string, unknown> }) | null;
+  if (typeof evidence !== 'object' || evidence === null) return ['the evidence is not an object'];
+  const problems: string[] = [];
+  if (!same(Object.keys(evidence).sort(), [...EVIDENCE_KEYS].sort())) {
+    problems.push('the evidence has other keys than its format');
+  }
+  if (!same(Object.keys(evidence.contents ?? {}).sort(), [...EVIDENCE_FILES].sort())) {
+    problems.push('the evidence carries other texts than the six it needs');
+  }
+  const run = evidence.run;
+  const artifact = evidence.artifact;
+  if (typeof artifact?.digest !== 'string' || artifact.digest !== artifact.zipSha256) {
+    problems.push("the ZIP's SHA-256 is not the artifact's API digest");
+  }
+  const steps: readonly unknown[] = Array.isArray(evidence.steps) ? evidence.steps : [];
+  const conclusionOf = (step: unknown): unknown =>
+    (step as { conclusion?: unknown } | null)?.conclusion;
+  if (steps.length === 0 || steps.some((step) => conclusionOf(step) !== 'success')) {
+    problems.push('a recorded step did not conclude success');
+  }
+  const paths: unknown[] = Array.isArray(artifact?.files)
+    ? artifact.files.map((file: unknown) => (file as { path?: unknown } | null)?.path)
+    : [];
+  if (!same([...paths].sort(), [...ARTIFACT_FILES])) {
+    problems.push('the artifact holds other files than the pinned run writes');
+  }
+  const verification: unknown = evidence.verification;
+  if (typeof verification !== 'object' || verification === null) {
+    problems.push('the evidence has no verification record');
+    return problems;
+  }
+  const record = verification as Record<string, unknown>;
+  if (!same(Object.keys(record).sort(), [...VERIFICATION_KEYS].sort())) {
+    problems.push('the verification record has other keys than its format');
+  }
+  const runUrl = typeof run?.htmlUrl === 'string' ? RUN_URL.exec(run.htmlUrl) : null;
+  const runId = runUrl?.[3];
+  const facts: [string, unknown, unknown][] = [
+    ['validatedCommit', record.validatedCommit, run?.headSha],
+    ['runId', record.runId, runId === undefined ? undefined : Number(runId)],
+    ['runAttempt', record.runAttempt, run?.runAttempt],
+    ['runUrl', record.runUrl, run?.htmlUrl],
+    ['event', record.event, run?.event],
+    ['artifactId', record.artifactId, artifact?.id],
+    ['zipSha256', record.zipSha256, artifact?.zipSha256],
+  ];
+  for (const [name, recorded, actual] of facts) {
+    if (actual === undefined || recorded !== actual) {
+      problems.push(`the verification's ${name} is not the evidence's`);
+    }
+  }
+  if (!Array.isArray(record.problems) || record.problems.length !== 0) {
+    problems.push('the verification records problems');
+  }
+  const commit = typeof record.validatedCommit === 'string' ? record.validatedCommit : '';
+  for (const name of ['validator', 'closingCommit'] as const) {
+    const text = record[name];
+    if (commit === '' || typeof text !== 'string' || !text.includes(commit)) {
+      problems.push(`the verification's ${name} does not name the validated commit`);
+    }
+  }
+  if (typeof record.verifiedOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(record.verifiedOn)) {
+    problems.push("the verification's verifiedOn is not a date");
+  }
+  const review = record.ownerReview as Record<string, unknown> | null | undefined;
+  if (
+    typeof review !== 'object' ||
+    review === null ||
+    !same(Object.keys(review).sort(), ['customHtml', 'download', 'reviewedCode']) ||
+    Object.values(review).some((text) => typeof text !== 'string' || text === '')
+  ) {
+    problems.push("the verification's ownerReview is incomplete");
+  }
+  const recorded: readonly (Record<string, unknown> | null)[] = Array.isArray(record.criteria)
+    ? (record.criteria as readonly (Record<string, unknown> | null)[])
+    : [];
+  if (criteria.length !== 8 || recorded.length !== criteria.length) {
+    problems.push('the verification does not record the eight criteria');
+  }
+  recorded.forEach((criterion, at) => {
+    if (
+      criterion?.id !== at + 1 ||
+      criterion.criterion !== criteria[at] ||
+      criterion.result !== 'pass' ||
+      typeof criterion.detail !== 'string' ||
+      criterion.detail === ''
+    ) {
+      problems.push(`criterion ${String(at + 1)} of the verification is not the owner's, passed`);
+    }
+  });
+  return problems;
+}

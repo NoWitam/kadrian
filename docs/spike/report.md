@@ -210,7 +210,8 @@ Still open:
   The code of the policy comes in a separate pull request. Until then, the
   Player's behaviour is unchanged.
 
-- **Not yet decided:** CI on a remote runner (Q14). See section 9.
+Closed since: CI runs on a remote GitHub runner in the pinned image (Q14,
+closed on 2026-09-25). See section 9.
 
 ## 6. D31 and the amendment D30.13
 
@@ -225,35 +226,35 @@ Still open:
 
 ## 7. Open questions of §11
 
-| #   | Status after the spike                                                                                                                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Q1  | Decided by D13                                                                                                                                                                                                                                                     |
-| Q2  | Answered, D29.5                                                                                                                                                                                                                                                    |
-| Q3  | Answered, D26 and D28                                                                                                                                                                                                                                              |
-| Q4  | Answered, D29.1–29.2                                                                                                                                                                                                                                               |
-| Q5  | Answered, D27                                                                                                                                                                                                                                                      |
-| Q6  | Decided by D14                                                                                                                                                                                                                                                     |
-| Q7  | Answered, D29.6                                                                                                                                                                                                                                                    |
-| Q8  | Answered by measurement: no LFS                                                                                                                                                                                                                                    |
-| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                                                                                                                                                      |
-| Q10 | Decided by D15                                                                                                                                                                                                                                                     |
-| Q11 | Decided by D16                                                                                                                                                                                                                                                     |
-| Q12 | Decided by D21                                                                                                                                                                                                                                                     |
-| Q13 | Decided by D16                                                                                                                                                                                                                                                     |
-| Q14 | **Open**: the first run failed at `Pinned FFmpeg`; the run of PR-14 passed, and its artifact met every criterion except the letter case of the repository name, which PR-15 fixes; Q14 needs a green run of the PR-15 commit (section 9); see docs/ci/first-run.md |
-| Q15 | Decided by D20                                                                                                                                                                                                                                                     |
-| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                                                                                                                                                 |
-| Q17 | Answered: `ValidatedComposition`                                                                                                                                                                                                                                   |
+| #   | Status after the spike                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Decided by D13                                                                                                                            |
+| Q2  | Answered, D29.5                                                                                                                           |
+| Q3  | Answered, D26 and D28                                                                                                                     |
+| Q4  | Answered, D29.1–29.2                                                                                                                      |
+| Q5  | Answered, D27                                                                                                                             |
+| Q6  | Decided by D14                                                                                                                            |
+| Q7  | Answered, D29.6                                                                                                                           |
+| Q8  | Answered by measurement: no LFS                                                                                                           |
+| Q9  | **Decided** by D33 and D34 (accepted 2026-09-23); gated in the pinned environment since PR-11                                             |
+| Q10 | Decided by D15                                                                                                                            |
+| Q11 | Decided by D16                                                                                                                            |
+| Q12 | Decided by D21                                                                                                                            |
+| Q13 | Decided by D16                                                                                                                            |
+| Q14 | **Closed**: the run 36072703155 of the PR-15 commit 4f4d467 met all eight criteria; the evidence is docs/ci/q14-evidence.json (section 9) |
+| Q15 | Decided by D20                                                                                                                            |
+| Q16 | **Decided** by D35 (accepted 2026-09-23, with the refinements of the owner); in force from then on                                        |
+| Q17 | Answered: `ValidatedComposition`                                                                                                          |
 
 ## 8. Recommended next phase
 
 The first phase after the spike should keep the engine narrow and harden what
 the spike proved, rather than widen it:
 
-1. **Close Q14 on a green run.** The first run failed while installing FFmpeg,
-   and the run of PR-14 passed (section 9). A green run of the PR-15 commit,
-   with its own artifact, is the evidence that can close Q14
-   (docs/ci/first-run.md).
+1. **Keep CI green (Q14 closed on 2026-09-25).** The run of the PR-15 commit
+   closed Q14 (section 9). A later red run is a regression to analyse first,
+   and a change to what the evidence is checked against reopens Q14 in the
+   commit that makes it (docs/ci/first-run.md).
 2. **Implement D36** (section 5): the host opt-in for Custom HTML in the
    Player, and no untrusted Custom HTML in the interactive preview by default.
    The decision was accepted on 2026-09-24, and its code comes in a pull
@@ -265,10 +266,20 @@ the spike proved, rather than widen it:
 Taskio integration, a timeline UI, and a language model stay outside the next
 phase until these hold.
 
-## 9. CI status after PR-15 (Q14)
+## 9. CI status after the Q14 evidence (Q14)
 
-**Q14 is open.** On 2026-09-25:
+**Q14 is closed.** On 2026-09-25:
 
+- The evidence is `docs/ci/q14-evidence.json`, of the run
+  https://github.com/NoWitam/Kadrian/actions/runs/36072703155 (run ID
+  `36072703155`, attempt 1, event `push`) of the validated commit
+  `4f4d4675c09d73d33916885961d1568f73a36c80` (PR-15), which passed every step.
+- Its artifact `10838699659` was downloaded from GitHub by the owner by hand.
+  The SHA-256 of the ZIP, computed during the verification, equals the digest
+  the GitHub API publishes. The validator of that commit
+  found no problem, and all eight criteria of docs/ci/first-run.md passed.
+- The commit that closes Q14 is a later documentation commit; the evidence is
+  of the validated commit.
 - The first run, https://github.com/NoWitam/kadrian/actions/runs/36009291627
   (commit `3ddd29d05be2938aabd996701abf9575f219ed33`, attempt 1, event `push`)
   failed at the step `Pinned FFmpeg`. The pinned browser and export tests were
@@ -277,15 +288,13 @@ phase until these hold.
 - PR-14 was committed as `a58ffc335283d2ad64078cabc4757dbc645a57c0` on the
   branch `pr-14-ci-repair`. Its run
   https://github.com/NoWitam/Kadrian/actions/runs/36054995870 (attempt 1,
-  event `push`) passed every step.
-- Its `kadrion-reports` artifact exists and was checked on 2026-09-25. It met
-  every machine-checkable criterion except the letter case of the repository
-  name, which PR-15 fixes in the validator.
-- That run confirms PR-14, but it cannot close Q14 for the commit of PR-15. A
-  new green run of that commit, with its own artifact, is required.
-- No evidence file exists.
+  event `push`) passed every step. Its artifact (id `10832915218`) was checked
+  on 2026-09-25 and met every machine-checkable criterion except the letter
+  case of the repository name, which PR-15 fixed in the validator.
 - Local tests, including the pinned container runs, do not replace a run on a
   GitHub runner.
+- What closed means, and which changes reopen Q14 in the commit that makes
+  them: see docs/ci/first-run.md.
 
 The cause: the pinned Playwright image has no `xz`, so `tar -xJf` could not
 decompress the FFmpeg archive. PR-14 decompresses with `xz` where it runs and
